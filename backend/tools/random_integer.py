@@ -9,8 +9,9 @@ TOOL: ChatCompletionToolUnionParam = {
         "name": "random_integer",
         "description": (
             "Generate random integers in a closed range [min, max], inclusive. "
-            "Use when the user needs randomness, dice rolls, lottery-style picks, "
-            "or unbiased numeric draws. Values are from a cryptographically strong source."
+            "Call this whenever the user asks for random/unpredictable integers, "
+            "dice, lottery draws, or numbers in a range — do not make up values. "
+            "Uses a cryptographically strong source."
         ),
         "parameters": {
             "type": "object",

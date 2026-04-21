@@ -17,8 +17,23 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(REPO_ROOT / ".env")
 
 API_KEY = os.getenv("OPEN_AI_API_KEY") or os.getenv("OPENAI_API_KEY")
-MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+MODEL = os.getenv("OPENAI_MODEL", "gpt-5")
 MAX_TOOL_ROUNDS = 8
+
+
+def _streamed_tool_calls_are_complete(tool_calls_list: list[dict[str, object]]) -> bool:
+    if not tool_calls_list:
+        return False
+    for tc in tool_calls_list:
+        fn = tc.get("function")
+        if not isinstance(fn, dict):
+            return False
+        if not str(tc.get("id", "")).strip():
+            return False
+        if not str(fn.get("name", "")).strip():
+            return False
+    return True
+
 
 app = FastAPI(title="Octo Chat")
 
@@ -50,12 +65,9 @@ async def _stream_model_round(
 
     assistant_parts: list[str] = []
     tool_calls_by_index: dict[int, dict[str, object]] = {}
-    finish_reason: str | None = None
 
     for chunk in stream:
         choice = chunk.choices[0]
-        if choice.finish_reason:
-            finish_reason = choice.finish_reason
         delta = choice.delta
         if delta and delta.content:
             assistant_parts.append(delta.content)
@@ -81,7 +93,8 @@ async def _stream_model_round(
 
     full_text = "".join(assistant_parts)
     tool_calls_list = [tool_calls_by_index[i] for i in sorted(tool_calls_by_index)]
-    has_tools = bool(tool_calls_list) and finish_reason == "tool_calls"
+    # Streaming sometimes omits finish_reason == "tool_calls" in edge cases; trust merged calls.
+    has_tools = _streamed_tool_calls_are_complete(tool_calls_list)
 
     if not has_tools:
         return full_text, False, []
@@ -123,9 +136,17 @@ async def chat(ws: WebSocket):
         {
             "role": "system",
             "content": (
-                "You are a helpful assistant. Reply concisely. "
-                "When you need unpredictable integers (dice, samples, lotteries), "
-                "call the random_integer tool instead of inventing numbers."
+                "You are a helpful assistant. Reply concisely in the user's language.\n\n"
+                "You have a tool `random_integer` that returns cryptographically strong "
+                "random integers in a closed range. Whenever the user wants unpredictable "
+                "integers—examples: random numbers in an interval, dice, lottery draws, "
+                "shuffled picks expressed as numbers, 'pick N random values', or any "
+                "request where fairness or true randomness matters—you must call "
+                "`random_integer` (possibly more than once if they want several numbers) "
+                "and then answer using only the values returned by the tool. "
+                "Do not type your own 'random' numbers, placeholders, or examples as if "
+                "they were the result; that is incorrect. If a request is ambiguous, ask "
+                "a short clarifying question instead of inventing numbers."
             ),
         }
     ]
