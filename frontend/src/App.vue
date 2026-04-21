@@ -9,7 +9,13 @@ const connected = ref(false)
 const sending = ref(false)
 const errorBanner = ref('')
 const scrollArea = ref(null)
+const messageInputRef = ref(null)
 let socket = null
+
+const chatScrollContentStyle = {
+  paddingLeft: '12px',
+  paddingRight: '20px',
+}
 
 function appendAssistantToken(text) {
   const last = messages.value[messages.value.length - 1]
@@ -27,11 +33,18 @@ function scrollToBottom() {
   })
 }
 
+function focusMessageInput() {
+  nextTick(() => {
+    messageInputRef.value?.focus?.()
+  })
+}
+
 onMounted(() => {
   socket = new WebSocket(WS_URL)
   socket.onopen = () => {
     connected.value = true
     errorBanner.value = ''
+    focusMessageInput()
   }
   socket.onclose = () => {
     connected.value = false
@@ -49,6 +62,7 @@ onMounted(() => {
       if (last && last.role === 'assistant') last.streaming = false
       sending.value = false
       scrollToBottom()
+      focusMessageInput()
     } else if (data.type === 'error') {
       errorBanner.value = data.message
       sending.value = false
@@ -57,6 +71,7 @@ onMounted(() => {
         last.streaming = false
         if (!last.text) last.text = '(no response)'
       }
+      focusMessageInput()
     }
   }
 })
@@ -99,25 +114,44 @@ function send() {
           {{ errorBanner }}
         </q-banner>
 
-        <q-scroll-area ref="scrollArea" class="col q-mb-md" style="min-height: 0">
+        <q-scroll-area
+          ref="scrollArea"
+          class="col q-mb-md"
+          style="min-height: 0"
+          :content-style="chatScrollContentStyle"
+        >
           <div class="q-gutter-sm">
-            <q-chat-message
-              v-for="(m, i) in messages"
-              :key="i"
-              :text="[m.text || (m.streaming ? '…' : '')]"
-              :sent="m.role === 'user'"
-              :name="m.role === 'user' ? 'You' : 'Assistant'"
-            />
+            <template v-for="(m, i) in messages" :key="i">
+              <q-chat-message
+                v-if="m.role === 'user'"
+                sent
+                name="You"
+                :text="[m.text]"
+              />
+              <q-chat-message v-else name="Assistant">
+                <span
+                  v-if="m.streaming && !m.text"
+                  class="typing-dots"
+                  aria-hidden="true"
+                >
+                  <span class="typing-dots__dot" />
+                  <span class="typing-dots__dot" />
+                  <span class="typing-dots__dot" />
+                </span>
+                <span v-else>{{ m.text }}</span>
+              </q-chat-message>
+            </template>
           </div>
         </q-scroll-area>
 
         <q-input
+          ref="messageInputRef"
           v-model="input"
           outlined
           dense
           placeholder="Message…"
           :disable="!connected || sending"
-          @keyup.enter="send"
+          @keyup.enter.exact="send"
         >
           <template #append>
             <q-btn
@@ -136,3 +170,43 @@ function send() {
     </q-page-container>
   </q-layout>
 </template>
+
+<style scoped>
+.typing-dots {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+  min-height: 1.25em;
+  vertical-align: middle;
+}
+
+.typing-dots__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.35;
+  animation: typing-dot 1s ease-in-out infinite;
+}
+
+.typing-dots__dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.typing-dots__dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes typing-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+</style>
