@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { formatChatHtml } from './chatFormat.js'
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws/chat'
 
@@ -8,14 +9,9 @@ const messages = ref([])
 const connected = ref(false)
 const sending = ref(false)
 const errorBanner = ref('')
-const scrollArea = ref(null)
+const scrollPanelRef = ref(null)
 const messageInputRef = ref(null)
 let socket = null
-
-const chatScrollContentStyle = {
-  paddingLeft: '12px',
-  paddingRight: '20px',
-}
 
 function appendAssistantToken(text) {
   const last = messages.value[messages.value.length - 1]
@@ -26,9 +22,9 @@ function appendAssistantToken(text) {
 
 function scrollToBottom() {
   nextTick(() => {
-    const sa = scrollArea.value
-    if (sa && typeof sa.setScrollPosition === 'function') {
-      sa.setScrollPosition('vertical', 999999, 0)
+    const el = scrollPanelRef.value
+    if (el) {
+      el.scrollTop = el.scrollHeight
     }
   })
 }
@@ -114,20 +110,15 @@ function send() {
           {{ errorBanner }}
         </q-banner>
 
-        <q-scroll-area
-          ref="scrollArea"
-          class="col q-mb-md"
-          style="min-height: 0"
-          :content-style="chatScrollContentStyle"
-        >
-          <div class="q-gutter-sm">
+        <div ref="scrollPanelRef" class="q-mb-md chat-scroll-panel">
+          <div class="chat-scroll-inner q-gutter-sm">
             <template v-for="(m, i) in messages" :key="i">
-              <q-chat-message
-                v-if="m.role === 'user'"
-                sent
-                name="You"
-                :text="[m.text]"
-              />
+              <q-chat-message v-if="m.role === 'user'" sent name="You">
+                <div
+                  class="chat-msg-html"
+                  v-html="formatChatHtml(m.text)"
+                />
+              </q-chat-message>
               <q-chat-message v-else name="Assistant">
                 <span
                   v-if="m.streaming && !m.text"
@@ -138,11 +129,15 @@ function send() {
                   <span class="typing-dots__dot" />
                   <span class="typing-dots__dot" />
                 </span>
-                <span v-else>{{ m.text }}</span>
+                <div
+                  v-else
+                  class="chat-msg-html"
+                  v-html="formatChatHtml(m.text)"
+                />
               </q-chat-message>
             </template>
           </div>
-        </q-scroll-area>
+        </div>
 
         <q-input
           ref="messageInputRef"
@@ -172,6 +167,30 @@ function send() {
 </template>
 
 <style scoped>
+.chat-scroll-panel {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.chat-scroll-inner {
+  padding-left: 12px;
+  padding-right: 12px;
+  box-sizing: border-box;
+}
+
+.chat-msg-html :deep(strong) {
+  font-weight: 700;
+}
+
+/* Native scroll reserves gutter; avoid hover/transition shifts on bubbles */
+.chat-scroll-panel :deep(.q-message-container),
+.chat-scroll-panel :deep(.q-message-text) {
+  transition: none !important;
+}
+
 .typing-dots {
   display: inline-flex;
   gap: 2px;
