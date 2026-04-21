@@ -1,8 +1,8 @@
 import json
-import logging
 import os
 from pathlib import Path
 
+import app.logging_config  # noqa: F401 — configure uvicorn logger level
 from dotenv import load_dotenv
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,20 +20,6 @@ load_dotenv(REPO_ROOT / ".env")
 API_KEY = os.getenv("OPEN_AI_API_KEY") or os.getenv("OPENAI_API_KEY")
 MODEL = os.getenv("OPENAI_MODEL", "gpt-5")
 MAX_TOOL_ROUNDS = 8
-
-
-def _configure_tool_logs() -> None:
-    lg = logging.getLogger("tools.random_integer")
-    if lg.handlers:
-        return
-    handler = logging.StreamHandler()
-    handler.setFormatter(logging.Formatter("%(levelname)s [%(name)s] %(message)s"))
-    lg.addHandler(handler)
-    lg.setLevel(logging.INFO)
-    lg.propagate = False
-
-
-_configure_tool_logs()
 
 
 def _streamed_tool_calls_are_complete(tool_calls_list: list[dict[str, object]]) -> bool:
