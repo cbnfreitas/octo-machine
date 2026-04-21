@@ -12,7 +12,7 @@ from openai.types.chat import (
     ChatCompletionMessageFunctionToolCallParam,
     ChatCompletionMessageParam,
 )
-from app.system_prompt import chat_system_content
+from app.system_prompt import RPG_OPENING_MESSAGE, chat_system_content
 from tools import TOOLS, run_tool
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -136,7 +136,9 @@ async def chat(ws: WebSocket):
     client = OpenAI(api_key=API_KEY)
     messages: list[ChatCompletionMessageParam] = [
         {"role": "system", "content": chat_system_content()},
+        {"role": "assistant", "content": RPG_OPENING_MESSAGE},
     ]
+    await ws.send_json({"type": "opening", "text": RPG_OPENING_MESSAGE})
 
     try:
         while True:

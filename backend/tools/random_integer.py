@@ -6,8 +6,9 @@ from openai.types.chat import ChatCompletionToolUnionParam
 from .invoke import invoke_tool
 
 TOOL_SYSTEM_INSTRUCTION = (
-    "When the user wants random integers in a range (dice, lottery, numeric picks, etc.), "
-    "call `random_integer`. Answer using only the returned numbers—never invent integers."
+    "Quando o jogador precisar de inteiros aleatórios num intervalo (dados, sorteio, escolhas "
+    "numéricas etc.), chame `random_integer`. Responda usando somente os números retornados—nunca "
+    "invente inteiros."
 )
 
 TOOL: ChatCompletionToolUnionParam = {
@@ -15,25 +16,24 @@ TOOL: ChatCompletionToolUnionParam = {
     "function": {
         "name": "random_integer",
         "description": (
-            "Generate random integers in a closed range [min, max], inclusive. "
-            "Call this whenever the user asks for random/unpredictable integers, "
-            "dice, lottery draws, or numbers in a range — do not make up values. "
-            "Uses a cryptographically strong source."
+            "Gera inteiros aleatórios no intervalo fechado [min, max], inclusive. "
+            "Chame quando precisar de inteiros imprevisíveis, dados, sorteios ou números num "
+            "intervalo—não invente valores. Usa fonte criptograficamente forte."
         ),
         "parameters": {
             "type": "object",
             "properties": {
                 "min": {
                     "type": "integer",
-                    "description": "Minimum value (inclusive).",
+                    "description": "Valor mínimo (inclusive).",
                 },
                 "max": {
                     "type": "integer",
-                    "description": "Maximum value (inclusive).",
+                    "description": "Valor máximo (inclusive).",
                 },
                 "count": {
                     "type": "integer",
-                    "description": "How many independent integers to generate.",
+                    "description": "Quantos inteiros independentes gerar.",
                     "default": 1,
                     "minimum": 1,
                     "maximum": 100,

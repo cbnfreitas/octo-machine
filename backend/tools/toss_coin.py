@@ -6,9 +6,9 @@ from openai.types.chat import ChatCompletionToolUnionParam
 from .invoke import invoke_tool
 
 TOOL_SYSTEM_INSTRUCTION = (
-    "When the user asks for a coin flip, heads/tails (cara/coroa), yes/no from a fair "
-    "binary chance, or multiple independent flips, call `toss_coin`. "
-    "`True` means heads (cara); `False` means tails (coroa). Answer only from the tool output."
+    "Quando o jogador pedir cara ou coroa, sorteio binário justo (sim/não) ou várias jogadas "
+    "independentes, chame `toss_coin`. `True` = cara; `False` = coroa. Responda só com a saída da "
+    "ferramenta."
 )
 
 TOOL: ChatCompletionToolUnionParam = {
@@ -16,15 +16,15 @@ TOOL: ChatCompletionToolUnionParam = {
     "function": {
         "name": "toss_coin",
         "description": (
-            "Fair random coin flip(s). Each result is independent: True = heads (cara), "
-            "False = tails (coroa). Do not guess outcomes—call this tool."
+            "Cara ou coroa justo(s). Cada resultado é independente: True = cara, False = coroa. "
+            "Não chute—use esta ferramenta."
         ),
         "parameters": {
             "type": "object",
             "properties": {
                 "count": {
                     "type": "integer",
-                    "description": "How many independent flips (default 1).",
+                    "description": "Quantas jogadas independentes (padrão 1).",
                     "default": 1,
                     "minimum": 1,
                     "maximum": 100,

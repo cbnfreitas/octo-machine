@@ -40,7 +40,6 @@ onMounted(() => {
   socket.onopen = () => {
     connected.value = true
     errorBanner.value = ''
-    focusMessageInput()
   }
   socket.onclose = () => {
     connected.value = false
@@ -50,7 +49,15 @@ onMounted(() => {
   }
   socket.onmessage = (ev) => {
     const data = JSON.parse(ev.data)
-    if (data.type === 'token') {
+    if (data.type === 'opening') {
+      messages.value.push({
+        role: 'assistant',
+        text: data.text || '',
+        streaming: false,
+      })
+      scrollToBottom()
+      focusMessageInput()
+    } else if (data.type === 'token') {
       appendAssistantToken(data.text)
       scrollToBottom()
     } else if (data.type === 'done') {
@@ -119,7 +126,7 @@ function send() {
                   v-html="formatChatHtml(m.text)"
                 />
               </q-chat-message>
-              <q-chat-message v-else name="Assistant">
+              <q-chat-message v-else name="Narrador">
                 <span
                   v-if="m.streaming && !m.text"
                   class="typing-dots"
