@@ -1,9 +1,9 @@
-import json
 import secrets
+from typing import Any, cast
 
 from openai.types.chat import ChatCompletionToolUnionParam
 
-from app.logging_config import logger, yellow_tool
+from .invoke import invoke_tool
 
 TOOL_SYSTEM_INSTRUCTION = (
     "When the user wants random integers in a range (dice, lottery, numeric picks, etc.), "
@@ -55,38 +55,16 @@ def random_integer(min_v: int, max_v: int, count: int = 1) -> dict[str, object]:
 
 
 def run(arguments_json: str) -> str:
-    try:
-        args = json.loads(arguments_json) if arguments_json else {}
-    except json.JSONDecodeError as e:
-        logger.warning(
-            "%s bad JSON arguments_json=%r err=%s",
-            yellow_tool("random_integer"),
-            arguments_json,
-            e,
+    def execute(args: dict[str, Any]) -> dict[str, object]:
+        return random_integer(
+            int(args["min"]),
+            int(args["max"]),
+            int(args.get("count", 1)),
         )
-        return json.dumps({"error": f"Invalid tool arguments JSON: {e}"})
 
-    try:
-        mn = int(args["min"])
-        mx = int(args["max"])
-        cnt = int(args.get("count", 1))
-    except (KeyError, TypeError, ValueError) as e:
-        logger.warning(
-            "%s bad args parsed=%r arguments_json=%r err=%s",
-            yellow_tool("random_integer"),
-            args,
-            arguments_json,
-            e,
-        )
-        return json.dumps({"error": f"Invalid random_integer args: {e}"})
-
-    result = random_integer(mn, mx, cnt)
-    logger.info(
-        "[%s] min=%s max=%s count=%s -> numbers=%s",
-        yellow_tool("random_integer"),
-        mn,
-        mx,
-        cnt,
-        result["numbers"],
+    return invoke_tool(
+        "random_integer",
+        arguments_json,
+        execute,
+        log_line=lambda r: f"min={r['min']} max={r['max']} count={len(cast(list[Any], r['numbers']))} -> numbers={r['numbers']}",
     )
-    return json.dumps(result)

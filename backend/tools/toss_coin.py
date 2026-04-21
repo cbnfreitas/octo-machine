@@ -1,9 +1,9 @@
-import json
 import secrets
+from typing import Any, cast
 
 from openai.types.chat import ChatCompletionToolUnionParam
 
-from app.logging_config import logger, yellow_tool
+from .invoke import invoke_tool
 
 TOOL_SYSTEM_INSTRUCTION = (
     "When the user asks for a coin flip, heads/tails (cara/coroa), yes/no from a fair "
@@ -42,29 +42,12 @@ def toss_coin(count: int = 1) -> dict[str, object]:
 
 
 def run(arguments_json: str) -> str:
-    try:
-        args = json.loads(arguments_json) if arguments_json else {}
-    except json.JSONDecodeError as e:
-        logger.warning(
-            "%s bad JSON arguments_json=%r err=%s",
-            yellow_tool("toss_coin"),
-            arguments_json,
-            e,
-        )
-        return json.dumps({"error": f"Invalid tool arguments JSON: {e}"})
+    def execute(args: dict[str, Any]) -> dict[str, object]:
+        return toss_coin(int(args.get("count", 1)))
 
-    try:
-        cnt = int(args.get("count", 1))
-    except (TypeError, ValueError) as e:
-        logger.warning(
-            "%s bad count parsed=%r arguments_json=%r err=%s",
-            yellow_tool("toss_coin"),
-            args,
-            arguments_json,
-            e,
-        )
-        return json.dumps({"error": f"Invalid toss_coin args: {e}"})
-
-    result = toss_coin(cnt)
-    logger.info("[%s] count=%s -> results=%s", yellow_tool("toss_coin"), cnt, result["results"])
-    return json.dumps(result)
+    return invoke_tool(
+        "toss_coin",
+        arguments_json,
+        execute,
+        log_line=lambda r: f"count={len(cast(list[Any], r['results']))} -> results={r['results']}",
+    )
