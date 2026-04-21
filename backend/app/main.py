@@ -18,7 +18,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(REPO_ROOT / ".env")
 
 API_KEY = os.getenv("OPEN_AI_API_KEY") or os.getenv("OPENAI_API_KEY")
-MODEL = os.getenv("OPENAI_MODEL", "gpt-5")
+MODEL = os.getenv("OPENAI_MODEL", "gpt-5-mini")
 MAX_TOOL_ROUNDS = 8
 
 
