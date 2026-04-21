@@ -1,7 +1,10 @@
 import json
+import logging
 import secrets
 
 from openai.types.chat import ChatCompletionToolUnionParam
+
+log = logging.getLogger(__name__)
 
 TOOL: ChatCompletionToolUnionParam = {
     "type": "function",
@@ -51,6 +54,7 @@ def run(arguments_json: str) -> str:
     try:
         args = json.loads(arguments_json) if arguments_json else {}
     except json.JSONDecodeError as e:
+        log.warning("random_integer: bad JSON arguments_json=%r err=%s", arguments_json, e)
         return json.dumps({"error": f"Invalid tool arguments JSON: {e}"})
 
     try:
@@ -58,6 +62,20 @@ def run(arguments_json: str) -> str:
         mx = int(args["max"])
         cnt = int(args.get("count", 1))
     except (KeyError, TypeError, ValueError) as e:
+        log.warning(
+            "random_integer: bad args parsed=%r arguments_json=%r err=%s",
+            args,
+            arguments_json,
+            e,
+        )
         return json.dumps({"error": f"Invalid random_integer args: {e}"})
 
-    return json.dumps(random_integer(mn, mx, cnt))
+    result = random_integer(mn, mx, cnt)
+    log.info(
+        "random_integer: min=%s max=%s count=%s -> numbers=%s",
+        mn,
+        mx,
+        cnt,
+        result["numbers"],
+    )
+    return json.dumps(result)
