@@ -1,5 +1,7 @@
+import difflib
 import json
 import re
+import unicodedata
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -35,8 +37,9 @@ TOOL: ChatCompletionToolUnionParam = {
                 "place_name": {
                     "type": "string",
                     "description": (
-                        "Nome do lugar conforme o mapa, sem inventar (ex.: "
-                        "\"Entrada\", \"Sala Principal\", \"Depósito Subterrâneo\")."
+                        "Nome **exatamente** como no mapa (copie das conexões de `move` quando possível). "
+                        "Use UTF-8 real: **não** use escapes Unicode no meio do nome (ex.: o trecho \"ão\" em "
+                        "\"Porão\", não um caractere nulo)."
                     ),
                 },
             },
@@ -95,14 +98,65 @@ def _description_for_player_facing(raw: str) -> str:
     return " ".join(text.split())
 
 
+def _strip_control_chars(s: str) -> str:
+    # NUL often appears when a model emits \u0000 instead of \u00e3 (ã) in JSON.
+    return "".join(ch for ch in s if ch != "\x00")
+
+
+def _repair_common_model_corruptions(s: str) -> str:
+    # After stripping NUL, "Porão" may become "Pore3o" (broken \u00e3 → \u0000e3).
+    t = re.sub(r"(?i)Pore3o", "Porão", s)
+    return t
+
+
+def _fold_for_match(s: str) -> str:
+    decomposed = unicodedata.normalize("NFD", s.casefold())
+    return "".join(ch for ch in decomposed if unicodedata.category(ch) != "Mn")
+
+
+def _resolve_place_name(raw: str, index: dict[str, dict[str, Any]]) -> str | None:
+    names = list(index.keys())
+    if not names:
+        return None
+
+    s = unicodedata.normalize("NFC", _strip_control_chars(raw.strip()))
+    if not s:
+        return None
+
+    variants = [s, _repair_common_model_corruptions(s)]
+    for candidate in variants:
+        if candidate in index:
+            return candidate
+
+    folded_in = _fold_for_match(s)
+    for name in names:
+        if _fold_for_match(name) == folded_in:
+            return name
+
+    for candidate in variants:
+        matches = difflib.get_close_matches(candidate, names, n=1, cutoff=0.72)
+        if matches:
+            return matches[0]
+
+    return None
+
+
 def move_to_place(place_name: str) -> dict[str, object]:
     trimmed = place_name.strip()
     if not trimmed:
         raise ValueError("place_name must be a non-empty string")
 
-    entry = _place_index().get(trimmed)
-    if entry is None:
-        raise ValueError(f"Unknown place_name: {trimmed!r}")
+    index = _place_index()
+    resolved = _resolve_place_name(trimmed, index)
+    if resolved is None:
+        hint = ""
+        s = _repair_common_model_corruptions(_strip_control_chars(trimmed))
+        near = difflib.get_close_matches(s, list(index.keys()), n=3, cutoff=0.4)
+        if near:
+            hint = f" Sugestões: {', '.join(near)}."
+        raise ValueError(f"Unknown place_name: {trimmed!r}.{hint}")
+
+    entry = index[resolved]
 
     raw_conns = entry.get("connections", [])
     if not isinstance(raw_conns, list):
@@ -119,7 +173,7 @@ def move_to_place(place_name: str) -> dict[str, object]:
     player_facing_summary = f"{description}\n\n{connection_line}"
 
     return {
-        "place_name": trimmed,
+        "place_name": resolved,
         "description": description,
         "description_full": description_full,
         "connections": connections,

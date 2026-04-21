@@ -8,7 +8,7 @@
     {
       "place_name": "Sala Principal",
       "connections": ["Entrada", "Salão", "Cozinha", "Despensa", "Escada"],
-      "description": "Vestíbulo ampliado (3m x 3m), eixo da casa. Espaço simples com paredes de argila. Uma pequena mesa com vela apagada. É o hub: ao norte leva ao grande salão, a leste à cozinha, e nordeste à despensa. Aqui não há tesouros relevantes, mas é ponto crítico de circulação (onde encontros com o vigia podem acontecer)."
+      "description": "Vestíbulo ampliado (3m x 3m), eixo da casa. Espaço simples com paredes de argila. Uma pequena mesa com vela apagada. É o hub: ao norte leva ao grande salão, a leste à cozinha, e nordeste à despensa. Há também uma escada que sobe. Aqui não há tesouros relevantes, mas é ponto crítico de circulação (onde encontros com o vigia podem acontecer)."
     },
     {
       "place_name": "Salão",
