@@ -12,7 +12,7 @@ from openai.types.chat import (
     ChatCompletionMessageFunctionToolCallParam,
     ChatCompletionMessageParam,
 )
-from tools import TOOLS, run_tool
+from tools import TOOLS, chat_system_content, run_tool
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(REPO_ROOT / ".env")
@@ -134,22 +134,7 @@ async def chat(ws: WebSocket):
 
     client = OpenAI(api_key=API_KEY)
     messages: list[ChatCompletionMessageParam] = [
-        {
-            "role": "system",
-            "content": (
-                "You are a helpful assistant. Reply concisely in the user's language.\n\n"
-                "You have a tool `random_integer` that returns cryptographically strong "
-                "random integers in a closed range. Whenever the user wants unpredictable "
-                "integers—examples: random numbers in an interval, dice, lottery draws, "
-                "shuffled picks expressed as numbers, 'pick N random values', or any "
-                "request where fairness or true randomness matters—you must call "
-                "`random_integer` (possibly more than once if they want several numbers) "
-                "and then answer using only the values returned by the tool. "
-                "Do not type your own 'random' numbers, placeholders, or examples as if "
-                "they were the result; that is incorrect. If a request is ambiguous, ask "
-                "a short clarifying question instead of inventing numbers."
-            ),
-        }
+        {"role": "system", "content": chat_system_content()},
     ]
 
     try:

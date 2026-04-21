@@ -3,7 +3,12 @@ import secrets
 
 from openai.types.chat import ChatCompletionToolUnionParam
 
-from app.logging_config import logger
+from app.logging_config import logger, yellow_tool
+
+TOOL_SYSTEM_INSTRUCTION = (
+    "When the user wants random integers in a range (dice, lottery, numeric picks, etc.), "
+    "call `random_integer`. Answer using only the returned numbers—never invent integers."
+)
 
 TOOL: ChatCompletionToolUnionParam = {
     "type": "function",
@@ -53,7 +58,12 @@ def run(arguments_json: str) -> str:
     try:
         args = json.loads(arguments_json) if arguments_json else {}
     except json.JSONDecodeError as e:
-        logger.warning("random_integer: bad JSON arguments_json=%r err=%s", arguments_json, e)
+        logger.warning(
+            "%s bad JSON arguments_json=%r err=%s",
+            yellow_tool("random_integer"),
+            arguments_json,
+            e,
+        )
         return json.dumps({"error": f"Invalid tool arguments JSON: {e}"})
 
     try:
@@ -62,7 +72,8 @@ def run(arguments_json: str) -> str:
         cnt = int(args.get("count", 1))
     except (KeyError, TypeError, ValueError) as e:
         logger.warning(
-            "random_integer: bad args parsed=%r arguments_json=%r err=%s",
+            "%s bad args parsed=%r arguments_json=%r err=%s",
+            yellow_tool("random_integer"),
             args,
             arguments_json,
             e,
@@ -71,7 +82,8 @@ def run(arguments_json: str) -> str:
 
     result = random_integer(mn, mx, cnt)
     logger.info(
-        "[random_integer]: min=%s max=%s count=%s -> numbers=%s",
+        "[%s] min=%s max=%s count=%s -> numbers=%s",
+        yellow_tool("random_integer"),
         mn,
         mx,
         cnt,

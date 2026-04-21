@@ -1,14 +1,43 @@
 import json
+from collections.abc import Callable
 
 from openai.types.chat import ChatCompletionToolUnionParam
 
 from .random_integer import TOOL as RANDOM_INTEGER_TOOL
+from .random_integer import TOOL_SYSTEM_INSTRUCTION as RANDOM_INTEGER_INSTRUCTION
 from .random_integer import run as run_random_integer
+from .toss_coin import TOOL as TOSS_COIN_TOOL
+from .toss_coin import TOOL_SYSTEM_INSTRUCTION as TOSS_COIN_INSTRUCTION
+from .toss_coin import run as run_toss_coin
 
-TOOLS: list[ChatCompletionToolUnionParam] = [RANDOM_INTEGER_TOOL]
+_TOOL_SPECS: list[
+    tuple[str, ChatCompletionToolUnionParam, str, Callable[[str], str]]
+] = [
+    ("random_integer", RANDOM_INTEGER_TOOL, RANDOM_INTEGER_INSTRUCTION, run_random_integer),
+    ("toss_coin", TOSS_COIN_TOOL, TOSS_COIN_INSTRUCTION, run_toss_coin),
+]
+
+TOOLS: list[ChatCompletionToolUnionParam] = [spec[1] for spec in _TOOL_SPECS]
+
+_RUNNERS: dict[str, Callable[[str], str]] = {spec[0]: spec[3] for spec in _TOOL_SPECS}
+
+
+def combined_tool_instructions() -> str:
+    return "\n\n".join(spec[2] for spec in _TOOL_SPECS)
+
+
+def chat_system_content() -> str:
+    return (
+        "You are a helpful assistant. Reply concisely in the user's language.\n\n"
+        "You have tools available. Prefer calling them whenever they can answer or "
+        "perform part of the task; ground what you say in tool outputs when you use them. "
+        "If something is unclear, ask a short clarifying question.\n\n"
+        f"{combined_tool_instructions()}"
+    )
 
 
 def run_tool(name: str, arguments_json: str) -> str:
-    if name == "random_integer":
-        return run_random_integer(arguments_json)
-    return json.dumps({"error": f"Unknown tool: {name}"})
+    runner = _RUNNERS.get(name)
+    if runner is None:
+        return json.dumps({"error": f"Unknown tool: {name}"})
+    return runner(arguments_json)
