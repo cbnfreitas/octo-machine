@@ -12,7 +12,8 @@ from openai.types.chat import (
     ChatCompletionMessageFunctionToolCallParam,
     ChatCompletionMessageParam,
 )
-from tools import TOOLS, chat_system_content, run_tool
+from app.system_prompt import chat_system_content
+from tools import TOOLS, run_tool
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(REPO_ROOT / ".env")

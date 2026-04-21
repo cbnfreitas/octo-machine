@@ -26,20 +26,6 @@ def combined_tool_instructions() -> str:
     return "\n\n".join(spec[2] for spec in _TOOL_SPECS)
 
 
-def chat_system_content() -> str:
-    return (
-        "You are a helpful assistant. Reply concisely in the user's language.\n\n"
-        "You have tools available. Prefer calling them whenever they can answer or "
-        "perform part of the task; ground what you say in tool outputs when you use them. "
-        "If something is unclear, ask a short clarifying question.\n\n"
-        "Formatting: you may use Markdown bold with double asterisks, e.g. **key term**. "
-        "Assume a busy reader—use bold sparingly and only to highlight short phrases "
-        "worth scanning (headings-in-line, critical numbers, or warnings). "
-        "Do not bold whole paragraphs.\n\n"
-        f"{combined_tool_instructions()}"
-    )
-
-
 def run_tool(name: str, arguments_json: str) -> str:
     runner = _RUNNERS.get(name)
     if runner is None:
