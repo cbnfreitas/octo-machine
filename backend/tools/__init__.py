@@ -6,6 +6,9 @@ from openai.types.chat import ChatCompletionToolUnionParam
 from .action_outcome import TOOL as ACTION_OUTCOME_TOOL
 from .action_outcome import TOOL_SYSTEM_INSTRUCTION as ACTION_OUTCOME_INSTRUCTION
 from .action_outcome import run as run_action_outcome
+from .move import TOOL as MOVE_TOOL
+from .move import TOOL_SYSTEM_INSTRUCTION as MOVE_INSTRUCTION
+from .move import run as run_move
 from .random_integer import TOOL as RANDOM_INTEGER_TOOL
 from .random_integer import TOOL_SYSTEM_INSTRUCTION as RANDOM_INTEGER_INSTRUCTION
 from .random_integer import run as run_random_integer
@@ -17,6 +20,7 @@ _TOOL_SPECS: list[
     tuple[str, ChatCompletionToolUnionParam, str, Callable[[str], str]]
 ] = [
     ("action_outcome", ACTION_OUTCOME_TOOL, ACTION_OUTCOME_INSTRUCTION, run_action_outcome),
+    ("move", MOVE_TOOL, MOVE_INSTRUCTION, run_move),
     ("random_integer", RANDOM_INTEGER_TOOL, RANDOM_INTEGER_INSTRUCTION, run_random_integer),
     ("toss_coin", TOSS_COIN_TOOL, TOSS_COIN_INSTRUCTION, run_toss_coin),
 ]

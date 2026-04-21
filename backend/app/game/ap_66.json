@@ -1,0 +1,59 @@
+
+{
+  "places": [
+    {
+      "place_name": "Saída",
+      "connections": ["Sala de Estar/Jantar"],
+      "description": "Fim de jogo."
+    },
+    {
+      "place_name": "Sala de Estar/Jantar",
+      "connections": ["Cozinha", "Corredor", "Saída" ],
+      "description": "Ambiente amplo e vazio que integra sala de estar e jantar. Aproximadamente 6m x 5m. Possui janelas grandes na parede externa inferior, permitindo boa entrada de luz natural. Vista bonita de muitas árvores.  O espaço é aberto e ecoa levemente por não ter móveis. Conecta-se diretamente à cozinha por uma porta com vidros e ao corredor que leva aos dormitórios. Piso de ardósia verde escura."
+    },
+    {
+      "place_name": "Cozinha",
+      "connections": ["Sala de Estar/Jantar", "Área de Serviço"],
+      "description": "Cozinha retangular de tamanho médio (cerca de 3m x 2,5m), completamente vazia. Há marcações de onde ficariam pia e fogão na parede norte. Não possui janela, é cômodo um pouco escura sem a luz artificial. Há uma porta de correr transparente que dá para a lavanderia. Piso e azulejo beges."
+    },
+    {
+      "place_name": "Área de Serviço",
+      "connections": ["Cozinha", "Lavabo"],
+      "description": "Pequeno espaço estreito (cerca de 2,5m x 1,5m), vazio, normalmente destinado a tanque e máquina de lavar. Possui uma janela até que grande para ventilação na parede externa. Há uma portinha do lado, levando a um pequeno lavabo. Há também uma pequena janela opaca interna que dá para o banheiro principal."
+    },
+    {
+        "place_name": "Lavabo",
+        "connections": ["Área de Serviço"],
+        "description": "Pequeno lavabo  (cerca de 1,5m x 2m) com uma pia e um vaso. Piso de azulejo beges. Sem janelas, a ventilação é feita por um pequena janela na parte de cima da porta."
+      },    
+    {
+      "place_name": "Corredor",
+      "connections": ["Sala de Estar/Jantar", "Banheiro", "Dormitório 1", "Dormitório 2", "Dormitório 3"],
+      "description": "Corredor central estreito (aproximadamente 4m de comprimento), conectando a área social aos dormitórios e banheiros. Sem janelas, iluminação dependeria de luz artificial. Funciona como eixo principal de circulação do apartamento."
+    },
+    {
+      "place_name": "Banheiro",
+      "connections": ["Corredor"],
+      "description": "Banheiro compacto,cerca de 1,5m x 2m. Há vaso e pia. A área do chuveiro possui um box. Azulejos brancos. Iluminação natural e ventilação só de uma pequena janela opaca que dá para a lavanderia."
+    },
+    {
+      "place_name": "Dormitório 1",
+      "connections": ["Corredor"],
+      "description": "Quarto médio (aproximadamente 3,5m x 2,5m), vazio. Possui uma janela voltada para a área de ventilação do prédio."
+    },
+    {
+      "place_name": "Dormitório 2",
+      "connections": ["Corredor"],
+      "description": "Quarto médio (cerca de 3,5m x 2,5m), completamente vazio. Possui janela externa para as árvores."
+    },
+    {
+      "place_name": "Dormitório 3",
+      "connections": ["Corredor"],
+      "description": "Quarto um pouco maior (aproximadamente 4m x 2,5m), vazio. Possui janela externa para as árvores. Acesso pelo corredor."
+    }
+  ]
+}
+
+
+
+
