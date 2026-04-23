@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 
 import app.logging_config  # noqa: F401 — configure uvicorn logger level
+from app.logging_config import logger
 from dotenv import load_dotenv
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,7 +13,12 @@ from openai.types.chat import (
     ChatCompletionMessageFunctionToolCallParam,
     ChatCompletionMessageParam,
 )
-from app.system_prompt import RPG_OPENING_MESSAGE, chat_system_content
+from app.system_prompt import (
+    OPENING_USER_PLACEHOLDER,
+    chat_system_content,
+    fallback_opening_message,
+    opening_turn_user_content,
+)
 from tools import TOOLS, run_tool
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -52,28 +58,43 @@ async def _stream_model_round(
     client: OpenAI,
     ws: WebSocket,
     messages: list[ChatCompletionMessageParam],
+    *,
+    forward_tokens: bool = True,
+    use_tools: bool = True,
 ) -> tuple[str, bool, list[ChatCompletionMessageFunctionToolCallParam]]:
     """
-    One streamed completion with tools. Forwards only text deltas to the client.
+    One streamed completion. Forwards text deltas to the client when forward_tokens is True.
     Returns (full_text, has_tool_calls, typed_calls). When has_tool_calls is True,
     typed_calls must be executed and the conversation continued.
     """
-    stream = client.chat.completions.create(
-        model=MODEL,
-        messages=messages,
-        tools=TOOLS,
-        stream=True,
-    )
+    if use_tools:
+        stream = client.chat.completions.create(
+            model=MODEL,
+            messages=messages,
+            tools=TOOLS,
+            stream=True,
+            stream_options={"include_usage": True},
+        )
+    else:
+        stream = client.chat.completions.create(
+            model=MODEL,
+            messages=messages,
+            stream=True,
+            stream_options={"include_usage": True},
+        )
 
     assistant_parts: list[str] = []
     tool_calls_by_index: dict[int, dict[str, object]] = {}
 
     for chunk in stream:
+        if not chunk.choices:
+            continue
         choice = chunk.choices[0]
         delta = choice.delta
         if delta and delta.content:
             assistant_parts.append(delta.content)
-            await ws.send_json({"type": "token", "text": delta.content})
+            if forward_tokens:
+                await ws.send_json({"type": "token", "text": delta.content})
         if delta and delta.tool_calls:
             for tc in delta.tool_calls:
                 idx = tc.index
@@ -136,9 +157,28 @@ async def chat(ws: WebSocket):
     client = OpenAI(api_key=API_KEY)
     messages: list[ChatCompletionMessageParam] = [
         {"role": "system", "content": chat_system_content()},
-        {"role": "assistant", "content": RPG_OPENING_MESSAGE},
+        {"role": "user", "content": opening_turn_user_content()},
     ]
-    await ws.send_json({"type": "opening", "text": RPG_OPENING_MESSAGE})
+    opening_text = ""
+    try:
+        opening_text, opening_tools, _ = await _stream_model_round(
+            client,
+            ws,
+            messages,
+            forward_tokens=False,
+            use_tools=False,
+        )
+        if opening_tools:
+            logger.warning("[chat] opening round requested tools unexpectedly")
+        opening_text = opening_text.strip()
+    except Exception:
+        logger.exception("[chat] opening generation failed; using fallback text")
+    if not opening_text:
+        opening_text = fallback_opening_message().strip()
+
+    messages.append({"role": "assistant", "content": opening_text})
+    messages[1] = {"role": "user", "content": OPENING_USER_PLACEHOLDER}
+    await ws.send_json({"type": "opening", "text": opening_text})
 
     try:
         while True:
