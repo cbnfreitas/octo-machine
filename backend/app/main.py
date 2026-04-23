@@ -61,11 +61,11 @@ async def _stream_model_round(
     *,
     forward_tokens: bool = True,
     use_tools: bool = True,
-) -> tuple[str, bool, list[ChatCompletionMessageFunctionToolCallParam]]:
+) -> tuple[str, bool, list[ChatCompletionMessageFunctionToolCallParam], int]:
     """
     One streamed completion. Forwards text deltas to the client when forward_tokens is True.
-    Returns (full_text, has_tool_calls, typed_calls). When has_tool_calls is True,
-    typed_calls must be executed and the conversation continued.
+    Returns (full_text, has_tool_calls, typed_calls, forwarded_token_events).
+    When has_tool_calls is True, typed_calls must be executed and the conversation continued.
     """
     if use_tools:
         stream = client.chat.completions.create(
@@ -85,6 +85,7 @@ async def _stream_model_round(
 
     assistant_parts: list[str] = []
     tool_calls_by_index: dict[int, dict[str, object]] = {}
+    forwarded_token_events = 0
 
     for chunk in stream:
         if not chunk.choices:
@@ -95,6 +96,7 @@ async def _stream_model_round(
             assistant_parts.append(delta.content)
             if forward_tokens:
                 await ws.send_json({"type": "token", "text": delta.content})
+                forwarded_token_events += 1
         if delta and delta.tool_calls:
             for tc in delta.tool_calls:
                 idx = tc.index
@@ -120,7 +122,7 @@ async def _stream_model_round(
     has_tools = _streamed_tool_calls_are_complete(tool_calls_list)
 
     if not has_tools:
-        return full_text, False, []
+        return full_text, False, [], forwarded_token_events
 
     typed_calls: list[ChatCompletionMessageFunctionToolCallParam] = []
     for tc in tool_calls_list:
@@ -136,7 +138,7 @@ async def _stream_model_round(
                 },
             }
         )
-    return full_text, True, typed_calls
+    return full_text, True, typed_calls, forwarded_token_events
 
 
 @app.get("/health")
@@ -159,26 +161,33 @@ async def chat(ws: WebSocket):
         {"role": "system", "content": chat_system_content()},
         {"role": "user", "content": opening_turn_user_content()},
     ]
+    await ws.send_json({"type": "opening_start"})
     opening_text = ""
+    forwarded = 0
     try:
-        opening_text, opening_tools, _ = await _stream_model_round(
-            client,
-            ws,
-            messages,
-            forward_tokens=False,
-            use_tools=False,
-        )
-        if opening_tools:
-            logger.warning("[chat] opening round requested tools unexpectedly")
-        opening_text = opening_text.strip()
-    except Exception:
-        logger.exception("[chat] opening generation failed; using fallback text")
-    if not opening_text:
-        opening_text = fallback_opening_message().strip()
+        try:
+            opening_text, opening_tools, _, forwarded = await _stream_model_round(
+                client,
+                ws,
+                messages,
+                forward_tokens=True,
+                use_tools=False,
+            )
+            if opening_tools:
+                logger.warning("[chat] opening round requested tools unexpectedly")
+            opening_text = opening_text.strip()
+        except Exception:
+            logger.exception("[chat] opening generation failed; using fallback text")
+            opening_text = ""
+        if not opening_text:
+            opening_text = fallback_opening_message().strip()
+        if forwarded == 0 and opening_text:
+            await ws.send_json({"type": "token", "text": opening_text})
+    finally:
+        await ws.send_json({"type": "opening_done"})
 
     messages.append({"role": "assistant", "content": opening_text})
     messages[1] = {"role": "user", "content": OPENING_USER_PLACEHOLDER}
-    await ws.send_json({"type": "opening", "text": opening_text})
 
     try:
         while True:
@@ -210,7 +219,7 @@ async def chat(ws: WebSocket):
                         )
                         break
 
-                    full_text, has_tools, typed_calls = await _stream_model_round(
+                    full_text, has_tools, typed_calls, _ = await _stream_model_round(
                         client, ws, messages
                     )
 

@@ -13,6 +13,13 @@ const scrollPanelRef = ref(null)
 const messageInputRef = ref(null)
 let socket = null
 
+function stampNow() {
+  return new Date().toLocaleTimeString(undefined, {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 function appendAssistantToken(text) {
   const last = messages.value[messages.value.length - 1]
   if (last && last.role === 'assistant' && last.streaming) {
@@ -49,12 +56,20 @@ onMounted(() => {
   }
   socket.onmessage = (ev) => {
     const data = JSON.parse(ev.data)
-    if (data.type === 'opening') {
+    if (data.type === 'opening_start') {
       messages.value.push({
         role: 'assistant',
-        text: data.text || '',
-        streaming: false,
+        text: '',
+        streaming: true,
+        stamp: undefined,
       })
+      scrollToBottom()
+    } else if (data.type === 'opening_done') {
+      const last = messages.value[messages.value.length - 1]
+      if (last && last.role === 'assistant') {
+        last.streaming = false
+        last.stamp = stampNow()
+      }
       scrollToBottom()
       focusMessageInput()
     } else if (data.type === 'token') {
@@ -62,7 +77,10 @@ onMounted(() => {
       scrollToBottom()
     } else if (data.type === 'done') {
       const last = messages.value[messages.value.length - 1]
-      if (last && last.role === 'assistant') last.streaming = false
+      if (last && last.role === 'assistant') {
+        last.streaming = false
+        last.stamp = stampNow()
+      }
       sending.value = false
       scrollToBottom()
       focusMessageInput()
@@ -73,6 +91,7 @@ onMounted(() => {
       if (last && last.role === 'assistant' && last.streaming) {
         last.streaming = false
         if (!last.text) last.text = '(no response)'
+        last.stamp = stampNow()
       }
       focusMessageInput()
     }
@@ -89,7 +108,12 @@ function send() {
   sending.value = true
   errorBanner.value = ''
   messages.value.push({ role: 'user', text })
-  messages.value.push({ role: 'assistant', text: '', streaming: true })
+  messages.value.push({
+    role: 'assistant',
+    text: '',
+    streaming: true,
+    stamp: undefined,
+  })
   scrollToBottom()
   socket.send(JSON.stringify({ content: text }))
   input.value = ''
@@ -126,7 +150,7 @@ function send() {
                   v-html="formatChatHtml(m.text)"
                 />
               </q-chat-message>
-              <q-chat-message v-else name="Narrador">
+              <q-chat-message v-else name="Narrador" :stamp="m.stamp">
                 <span
                   v-if="m.streaming && !m.text"
                   class="typing-dots"
@@ -137,7 +161,7 @@ function send() {
                   <span class="typing-dots__dot" />
                 </span>
                 <div
-                  v-else
+                  v-else-if="m.text"
                   class="chat-msg-html"
                   v-html="formatChatHtml(m.text)"
                 />

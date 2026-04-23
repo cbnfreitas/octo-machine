@@ -10,7 +10,7 @@ from openai.types.chat import ChatCompletionToolUnionParam
 
 from .invoke import invoke_tool
 
-_GAME_MAP_JSON = Path(__file__).resolve().parent.parent / "app" / "game" / "casa_fatso.json"
+_GAME_MAP_JSON = Path(__file__).resolve().parent.parent / "app" / "game" / "uma_noite_de_trabalho.json"
 GAME_MAP_BASENAME = _GAME_MAP_JSON.name
 STARTING_PLACE_NAME = "Cozinha"
 

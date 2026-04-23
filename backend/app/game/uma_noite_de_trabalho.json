@@ -20,7 +20,7 @@
     {
       "place_name": "Cozinha",
       "connections": ["Sala Principal", "Despensa", "Exterior via Janela"],
-      "description": "Cozinha com fogão a lenha ainda com brasas, panela com tampa, mesa com vela e utensílios. Panelas de ferro, faca, alimentos simples. Uma janela larga permite entrada/saída. Objetos úteis: frigideira (arma improvisada), comida, utensílios. Não há tesouros principais aqui, mas é rota de entrada e fuga."
+      "description": "Cozinha com fogão a lenha ainda com brasas, panela com tampa, mesa com vela e utensílios. Panelas de ferro, faca, alimentos simples. Uma janela larga permite entrada/saída. comida, utensílios. Não há tesouros principais aqui, mas é rota de entrada e fuga."
     },
     {
       "place_name": "Despensa",
