@@ -1,4 +1,6 @@
 {
+  "intro": "Você é um ladrão e dos bons. Sua especialidade é roubar os ricos — \"Não por uma questão de nobreza\", como costuma dizer, \"é que os pobres não têm nada para se roubar!\"\n\nEsta noite você está rondando uma parte da cidade particularmente rica. Você não vem aqui com freqüência; a entrada do bairro é muito bem vigiada. A grande chance surgiu esta noite, quando o vigia achou a garrafa de uísque que você deixou para ele. Você entrou furtivamente assim que ele adormeceu.\n\nA noite está esplêndida para um ladrão; a lua brilha quase tão intensamente quanto o sol. Você examina as janelas, enquanto desliza entre as sombras, e logo descobre uma que não está trancada. Enfia a lâmina de seu punhal no vão e levanta a aldrava.",
+  "narrator_opening_note": "Mantém coerência com a intro: entrada pela janela até o lugar inicial do mapa.",
   "places": [
     {
       "place_name": "Entrada",

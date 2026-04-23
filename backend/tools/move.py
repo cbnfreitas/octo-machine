@@ -11,11 +11,12 @@ from openai.types.chat import ChatCompletionToolUnionParam
 from .invoke import invoke_tool
 
 _GAME_MAP_JSON = Path(__file__).resolve().parent.parent / "app" / "game" / "casa_fatso.json"
-STARTING_PLACE_NAME = "Entrada"
+GAME_MAP_BASENAME = _GAME_MAP_JSON.name
+STARTING_PLACE_NAME = "Cozinha"
 
 TOOL_SYSTEM_INSTRUCTION = (
     "Quando o jogador **mudar de lugar** ou **ir para outro cômodo**, chame `move` com "
-    "`place_name` **exatamente** como no mapa (ex.: \"Entrada\", \"Salão\", \"Despensa\"). "
+    "`place_name` **exatamente** como no mapa (ex.: \"Cozinha\", \"Salão\", \"Despensa\"). "
     "A saída traz `description` e `player_facing_summary` **já filtrados** (sem blocos de "
     "segredo/armadilha do arquivo bruto); use isso como base ao chegar. O campo `description_full` "
     "é o texto integral do mapa—**só** use trechos ocultos quando o jogador **tiver explorado "
@@ -50,9 +51,13 @@ TOOL: ChatCompletionToolUnionParam = {
 
 
 @lru_cache(maxsize=1)
-def _place_index() -> dict[str, dict[str, Any]]:
+def _raw_game_document() -> dict[str, Any]:
     with _GAME_MAP_JSON.open(encoding="utf-8") as f:
-        data = json.load(f)
+        return json.load(f)
+
+
+def _place_index() -> dict[str, dict[str, Any]]:
+    data = _raw_game_document()
     raw_places = data["places"]
     if not isinstance(raw_places, list):
         raise TypeError("game map JSON: 'places' must be a list")
@@ -64,6 +69,20 @@ def _place_index() -> dict[str, dict[str, Any]]:
         if isinstance(name, str) and name:
             index[name] = item
     return index
+
+
+def get_game_intro() -> str:
+    intro = _raw_game_document().get("intro")
+    if not isinstance(intro, str):
+        return ""
+    return intro.strip()
+
+
+def get_narrator_opening_note() -> str:
+    raw = _raw_game_document().get("narrator_opening_note")
+    if not isinstance(raw, str):
+        return ""
+    return raw.strip()
 
 
 def _format_connection_line(connections: list[str]) -> str:

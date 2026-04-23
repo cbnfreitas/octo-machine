@@ -1,10 +1,19 @@
 from tools import combined_tool_instructions
-from tools.move import STARTING_PLACE_NAME, move_to_place
+from tools.move import (
+    GAME_MAP_BASENAME,
+    STARTING_PLACE_NAME,
+    get_game_intro,
+    get_narrator_opening_note,
+    move_to_place,
+)
 
 
 def _build_opening_message() -> str:
+    intro = get_game_intro()
     start = move_to_place(STARTING_PLACE_NAME)
     summary = str(start["player_facing_summary"])
+    if intro:
+        return f"{intro}\n\n{summary}\n\nO que deseja fazer?"
     return (
         "Este é um RPG em texto: você explora **esta casa**, indo de um lugar a outro.\n\n"
         f"{summary}\n\n"
@@ -16,12 +25,28 @@ def _build_opening_message() -> str:
 RPG_OPENING_MESSAGE = _build_opening_message()
 
 
+def _opening_contract_for_narrator() -> str:
+    parts = [
+        "O ficheiro de mapa do jogo é **%s**." % GAME_MAP_BASENAME,
+        (
+            "Se existir o campo **`intro`**, a abertura incorpora esse texto; a primeira mensagem do "
+            "assistente junta **`intro`** (quando houver) ao equivalente a **`move`** para o lugar "
+            "inicial **%s**. **Não** contradigas esse enquadramento." % STARTING_PLACE_NAME
+        ),
+    ]
+    note = get_narrator_opening_note()
+    if note:
+        parts.append(note)
+    return " ".join(parts)
+
+
 def _rpg_sections() -> str:
     return (
         "## Papel\n\n"
         "Você é a **narradora** de um **RPG em texto** para o Jogador: o objetivo é **explorar a "
         "casa** descrita pelo mapa do jogo. Escreva em **português do Brasil** (segunda pessoa: "
         "você). Mantenha tom claro e atmosférico; conduza as cenas com objetividade.\n\n"
+        f"{_opening_contract_for_narrator()}\n\n"
         "**Cânone do cenário (obrigatório):** Tudo o que você **afirma como fato** sobre o imóvel, os "
         "cômodos, ligações entre espaços, materiais, dimensões, presença ou ausência de objetos fixos, "
         "janelas, portas e iluminação deve vir **exclusivamente** das descrições devolvidas pela "
