@@ -7,6 +7,9 @@ from tools.move import (
     move_to_place,
 )
 
+# Approximate max chars per narrator reply (tune here; values are woven into the LLM system prompt).
+NARRATION_INITIAL_MAX_CHARS = 1000
+NARRATION_FOLLOWUP_MAX_CHARS = 500
 
 OPENING_USER_PLACEHOLDER = "(Sessão iniciada. A abertura já foi narrada ao jogador.)"
 
@@ -46,7 +49,9 @@ def opening_turn_user_content() -> str:
         "(portas, vãos, rumos que ligam a outros espaços) com base nas **conexões** do Move, em prosa, "
         "sem lista técnica; um pouco de **carga dramática** se couber ao tom. **POV**: só percepção e "
         "inferência do momento; sem «não há tesouro/valor» como facto do mapa; nomes de espaços na prosa "
-        "em forma natural (minúsculas quando couber).\n\n"
+        "em forma natural (minúsculas quando couber). Respeita **Economia de detalhe**: o bloco que "
+        f"**ancora** o lugar inicial depois de situares o contexto **≤~{NARRATION_INITIAL_MAX_CHARS}** "
+        "caracteres; mantém a abertura global **enxuta**.\n\n"
         "Integra o arco de **### Intro** com o momento em que o jogador **acaba de entrar** no lugar "
         f"inicial (**{STARTING_PLACE_NAME}**), usando apenas **### Move** como base factual — **não** "
         "copies parágrafos de apoio palavra a palavra.\n\n"
@@ -139,6 +144,18 @@ def _rpg_sections() -> str:
         "**não** inventaries todos os objetos do mapa de uma vez. **Detalhes adicionais** (cantos, "
         "objetos secundários, texturas) surgem quando o jogador **pergunta, aproxima-se ou foca**—aí "
         "podes aprofundar com base no que o `move` / mapa sustenta.\n\n"
+        "## Economia de detalhe (extensão)\n\n"
+        "Controla o **tamanho** de cada resposta (contagem aproximada por ti antes de enviar):\n\n"
+        "- **Descrições iniciais** — primeira vez que **firmas** um **lugar** (p.ex. após `move`), ou "
+        f"que **apresentas** uma **pessoa** relevante ou um **evento** que vira a cena: **até "
+        f"~{NARRATION_INITIAL_MAX_CHARS} caracteres**. Prioriza uma imagem nítida, ganchos espaciais e "
+        "tom; **sem** inventário nem parágrafos longos.\n"
+        "- **Follow-up** — continuação na **mesma** situação (pergunta pontual do jogador, reação "
+        f"imediata, detalhe pedido, micro-consequência): **até ~{NARRATION_FOLLOWUP_MAX_CHARS} "
+        "caracteres**.\n\n"
+        "Se pedirem **mais**, novo bloco dentro do mesmo teto. Só alonga de forma excecional quando o "
+        "jogador pedir explicitamente mais texto ou quando a tensão exigir **um** parágrafo extra—e "
+        "mesmo assim com moderação.\n\n"
         "## Ponto de vista (o que o jogador pode saber)\n\n"
         "Narra **apenas** o que o personagem **vê, ouve, cheira ou deduz naquele instante**—não voz de "
         "autor do mapa nem resumo de ficha. **Não** transcrevas julgamentos de valor ou ausências "
