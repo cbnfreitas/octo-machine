@@ -18,7 +18,7 @@ TOOL: ChatCompletionToolUnionParam = {
         "description": (
             "Gera inteiros aleatórios no intervalo fechado [min, max], inclusive. "
             "Chame quando precisar de inteiros imprevisíveis, dados, sorteios ou números num "
-            "intervalo—não invente valores. Usa fonte criptograficamente forte."
+            "intervalo—não invente valores. Use fonte criptograficamente forte."
         ),
         "parameters": {
             "type": "object",

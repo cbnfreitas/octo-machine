@@ -1,10 +1,9 @@
-import asyncio
 import json
 import os
 from pathlib import Path
 
 import app.logging_config  # noqa: F401 — configure uvicorn logger level
-from app.logging_config import logger
+from app.logging_config import logger, yellow_tool
 from dotenv import load_dotenv
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,7 +14,7 @@ from openai.types.chat import (
     ChatCompletionMessageParam,
 )
 from app.messaging import build_turn_user_content
-from app.reconciliation import ReconciliationTurnSnapshot, apply_reconciliation_snapshot
+from app.reconciliation import ReconciliationTurnSnapshot, apply_reconciliation_llm
 from app.session_state import GameSessionState
 from app.system_prompt import (
     OPENING_USER_PLACEHOLDER,
@@ -33,13 +32,13 @@ MODEL = os.getenv("OPENAI_MODEL", "gpt-5-mini")
 MAX_TOOL_ROUNDS = 8
 
 
-async def _reconciliation_background_task(
-    state: GameSessionState, snap: ReconciliationTurnSnapshot
+async def _run_reconciliation_turn(
+    client: OpenAI, state: GameSessionState, snap: ReconciliationTurnSnapshot
 ) -> None:
     try:
-        await apply_reconciliation_snapshot(state, snap)
+        await apply_reconciliation_llm(client, state, snap)
     except Exception:
-        logger.exception("[reconciliation] task failed")
+        logger.exception("[reconciliation] turn failed")
 
 
 def _streamed_tool_calls_are_complete(tool_calls_list: list[dict[str, object]]) -> bool:
@@ -260,7 +259,15 @@ async def chat(ws: WebSocket):
                         for tc in typed_calls:
                             fn = tc["function"]
                             assert isinstance(fn, dict)
-                            result = run_tool(str(fn["name"]), str(fn["arguments"]))
+                            tname = str(fn["name"])
+                            targs = str(fn.get("arguments", ""))
+                            logger.info(
+                                "[narrator_llm -> engine] tool_call id=%s name=%s args=%s",
+                                str(tc.get("id", "")),
+                                yellow_tool(tname),
+                                targs[:4000] + ("…" if len(targs) > 4000 else ""),
+                            )
+                            result = run_tool(tname, targs)
                             turn_tool_results.append(result)
                             messages.append(
                                 {
@@ -272,12 +279,13 @@ async def chat(ws: WebSocket):
                         continue
 
                     messages.append({"role": "assistant", "content": full_text})
-                    await ws.send_json({"type": "done"})
                     snap = ReconciliationTurnSnapshot(
+                        player_intent_plain=content,
                         narration_to_player=full_text,
                         tool_result_contents=list(turn_tool_results),
                     )
-                    asyncio.create_task(_reconciliation_background_task(session_state, snap))
+                    await _run_reconciliation_turn(client, session_state, snap)
+                    await ws.send_json({"type": "done"})
                     break
 
             except Exception as e:
