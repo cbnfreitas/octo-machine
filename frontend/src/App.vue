@@ -154,7 +154,7 @@ function send() {
               <q-chat-message
                 v-if="m.role === 'user'"
                 sent
-                name="You"
+                name="JOGADOR"
                 :stamp="m.stamp"
                 class="retro-chat-msg retro-chat-msg--user"
               >
