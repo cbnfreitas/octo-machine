@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 from pathlib import Path
@@ -13,6 +14,9 @@ from openai.types.chat import (
     ChatCompletionMessageFunctionToolCallParam,
     ChatCompletionMessageParam,
 )
+from app.messaging import build_turn_user_content
+from app.reconciliation import ReconciliationTurnSnapshot, apply_reconciliation_snapshot
+from app.session_state import GameSessionState
 from app.system_prompt import (
     OPENING_USER_PLACEHOLDER,
     chat_system_content,
@@ -27,6 +31,15 @@ load_dotenv(REPO_ROOT / ".env")
 API_KEY = os.getenv("OPEN_AI_API_KEY") or os.getenv("OPENAI_API_KEY")
 MODEL = os.getenv("OPENAI_MODEL", "gpt-5-mini")
 MAX_TOOL_ROUNDS = 8
+
+
+async def _reconciliation_background_task(
+    state: GameSessionState, snap: ReconciliationTurnSnapshot
+) -> None:
+    try:
+        await apply_reconciliation_snapshot(state, snap)
+    except Exception:
+        logger.exception("[reconciliation] task failed")
 
 
 def _streamed_tool_calls_are_complete(tool_calls_list: list[dict[str, object]]) -> bool:
@@ -157,9 +170,13 @@ async def chat(ws: WebSocket):
         return
 
     client = OpenAI(api_key=API_KEY)
+    session_state = GameSessionState()
     messages: list[ChatCompletionMessageParam] = [
         {"role": "system", "content": chat_system_content()},
-        {"role": "user", "content": opening_turn_user_content()},
+        {
+            "role": "user",
+            "content": opening_turn_user_content(fatigue_percent=session_state.fatigue_percent),
+        },
     ]
     await ws.send_json({"type": "opening_start"})
     opening_text = ""
@@ -203,10 +220,18 @@ async def chat(ws: WebSocket):
                 continue
 
             turn_start = len(messages)
-            messages.append({"role": "user", "content": content})
+            async with session_state.lock:
+                fatigue_now = session_state.fatigue_percent
+            messages.append(
+                {
+                    "role": "user",
+                    "content": build_turn_user_content(content, fatigue_percent=fatigue_now),
+                }
+            )
 
             try:
                 round_num = 0
+                turn_tool_results: list[str] = []
                 while True:
                     round_num += 1
                     if round_num > MAX_TOOL_ROUNDS:
@@ -236,6 +261,7 @@ async def chat(ws: WebSocket):
                             fn = tc["function"]
                             assert isinstance(fn, dict)
                             result = run_tool(str(fn["name"]), str(fn["arguments"]))
+                            turn_tool_results.append(result)
                             messages.append(
                                 {
                                     "role": "tool",
@@ -247,6 +273,11 @@ async def chat(ws: WebSocket):
 
                     messages.append({"role": "assistant", "content": full_text})
                     await ws.send_json({"type": "done"})
+                    snap = ReconciliationTurnSnapshot(
+                        narration_to_player=full_text,
+                        tool_result_contents=list(turn_tool_results),
+                    )
+                    asyncio.create_task(_reconciliation_background_task(session_state, snap))
                     break
 
             except Exception as e:

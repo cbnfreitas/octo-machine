@@ -1,3 +1,4 @@
+from app.messaging import format_engine_context_for_prompt
 from tools import combined_tool_instructions
 from tools.move import (
     GAME_MAP_BASENAME,
@@ -27,7 +28,7 @@ def fallback_opening_message() -> str:
     )
 
 
-def opening_turn_user_content() -> str:
+def opening_turn_user_content(*, fatigue_percent: float = 0.0) -> str:
     intro = get_game_intro()
     start = move_to_place(STARTING_PLACE_NAME)
     summary = str(start["player_facing_summary"])
@@ -59,7 +60,25 @@ def opening_turn_user_content() -> str:
         "### Intro (matéria-prima)\n\n"
         f"{intro_block}\n\n"
         "### Move — lugar inicial — matéria-prima\n\n"
-        f"{summary}\n"
+        f"{summary}\n\n"
+        f"{format_engine_context_for_prompt(fatigue_percent)}\n"
+    )
+
+
+def _acrobatics_fatigue_section() -> str:
+    return (
+        "## Acrobacia e fadiga interna\n\n"
+        "O bloco **ENGINE_CONTEXT** traz **fadiga interna (acrobacia)** só como **frase qualitativa** "
+        "(sem números). Isso mede cansaço físico acumulado para **modular** a ficção; **não** trates como "
+        "dado que o personagem lê como estatística nem digas «fadiga interna» de forma meta.\n\n"
+        "Quando o jogador tentar **manobra acrobática** (salto, equilíbrio arriscado, queda controlada, "
+        "escalar trecho exposto, etc.), na **primeira narração dessa tentativa nesta jogada**, inclui na "
+        "prosa a **dificuldade percebida** pelo corpo — escala aproximada: "
+        "**fácil** / **moderada** / **exigente** / **muito arriscada** / **quase impraticável neste estado** — "
+        "**coerente** com o nível de fadiga descrito no ENGINE_CONTEXT: quanto **pior** o estado, **mais "
+        "dura** a manobra parece. Não precisas nomear a escala; integra na sensação e no risco.\n\n"
+        "Se o estado já for de esgotamento extremo, podes refletir **instabilidade**, **visão curta**, "
+        "**perda de força** — sempre em POV do personagem.\n\n"
     )
 
 
@@ -82,6 +101,7 @@ def _opening_contract_for_narrator() -> str:
 
 def _rpg_sections() -> str:
     return (
+        f"{_acrobatics_fatigue_section()}"
         "## Papel\n\n"
         "Você é a **narradora** de um **RPG em texto** para o Jogador: o objetivo é **explorar a "
         "casa** descrita pelo mapa do jogo. Escreva em **português do Brasil** (segunda pessoa: "
