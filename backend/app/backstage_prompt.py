@@ -1,11 +1,11 @@
 """
-PT-BR prompts for the reconciliation LLM (internal state, not shown to the player).
+PT-BR prompts for the backstage LLM (internal state, not shown to the player).
 """
 
 
-def reconciliation_system_prompt() -> str:
+def backstage_system_prompt() -> str:
     return (
-        "Você é o módulo de **reconciliação** de um RPG em texto. Você não escreve para o jogador. "
+        "Você é o módulo de **backstage** de um RPG em texto. Você não escreve para o jogador. "
         "Você lê a **intenção do jogador**, o texto completo da **narração mostrada ao jogador** "
         "(é a **fonte principal** do que aconteceu na cena), os **resultados JSON das ferramentas** "
         "do turno (se houver) e qualquer **informação oculta** além da percepção dele.\n\n"

@@ -1,5 +1,5 @@
 """
-Identifiers for the message flow: Player, Narrator (LLM), Engine tools, Reconciliation (LLM).
+Identifiers for the message flow: Player, Narrator (LLM), Engine tools, Backstage (LLM).
 See diagrama_troca_mensagens.md.
 """
 
@@ -12,7 +12,7 @@ class Participant(StrEnum):
     PLAYER = "player"
     NARRATOR_LLM = "narrator_llm"
     ENGINE_TOOLS = "engine_tools"
-    RECONCILIATION_LLM = "reconciliation_llm"
+    BACKSTAGE_LLM = "backstage_llm"
 
 
 class SyncChannel(StrEnum):
@@ -26,8 +26,8 @@ class SyncChannel(StrEnum):
 
 
 class AsyncChannel(StrEnum):
-    """Asynchronous edges (reconciliation path)."""
+    """Asynchronous edges (backstage path)."""
 
-    NARRATOR_NARRATION_TO_RECONCILIATION = "narrator_narration_to_reconciliation"
-    NARRATOR_HIDDEN_TO_RECONCILIATION = "narrator_hidden_to_reconciliation"
-    RECONCILIATION_CONTEXT_UPDATE_TO_ENGINE = "reconciliation_context_update_to_engine"
+    NARRATOR_NARRATION_TO_BACKSTAGE = "narrator_narration_to_backstage"
+    NARRATOR_HIDDEN_TO_BACKSTAGE = "narrator_hidden_to_backstage"
+    BACKSTAGE_CONTEXT_UPDATE_TO_ENGINE = "backstage_context_update_to_engine"

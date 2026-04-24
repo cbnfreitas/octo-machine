@@ -16,7 +16,7 @@ from openai.types.chat import (
     ChatCompletionMessageParam,
 )
 from app.messaging import build_turn_user_content
-from app.reconciliation import ReconciliationTurnSnapshot, apply_reconciliation_llm
+from app.backstage import BackstageTurnSnapshot, apply_backstage_llm
 from app.session_state import GameSessionState
 from app.system_prompt import (
     OPENING_USER_PLACEHOLDER,
@@ -38,13 +38,13 @@ def _hhmm() -> str:
     return datetime.now().strftime("%H:%M")
 
 
-async def _run_reconciliation_turn(
-    client: OpenAI, state: GameSessionState, snap: ReconciliationTurnSnapshot
+async def _run_backstage_turn(
+    client: OpenAI, state: GameSessionState, snap: BackstageTurnSnapshot
 ) -> None:
     try:
-        await apply_reconciliation_llm(client, state, snap)
+        await apply_backstage_llm(client, state, snap)
     except Exception:
-        logger.exception("%s [reconciliation] turn failed", _hhmm())
+        logger.exception("%s [backstage] turn failed", _hhmm())
 
 
 def _streamed_tool_calls_are_complete(tool_calls_list: list[dict[str, object]]) -> bool:
@@ -211,7 +211,7 @@ async def chat(ws: WebSocket):
     messages.append({"role": "assistant", "content": opening_text})
     messages[1] = {"role": "user", "content": OPENING_USER_PLACEHOLDER}
 
-    pending_recon: asyncio.Task | None = None
+    pending_backstage: asyncio.Task | None = None
 
     try:
         while True:
@@ -226,14 +226,14 @@ async def chat(ws: WebSocket):
             if not content:
                 continue
 
-            if pending_recon is not None:
-                if not pending_recon.done():
-                    await ws.send_json({"type": "reconciliation_pending"})
+            if pending_backstage is not None:
+                if not pending_backstage.done():
+                    await ws.send_json({"type": "backstage_pending"})
                     try:
-                        await pending_recon
+                        await pending_backstage
                     except Exception:
-                        logger.exception("[%s] [chat] wait for reconciliation failed", _hhmm())
-                pending_recon = None
+                        logger.exception("[%s] [chat] wait for backstage failed", _hhmm())
+                pending_backstage = None
 
             turn_start = len(messages)
             async with session_state.lock:
@@ -297,14 +297,14 @@ async def chat(ws: WebSocket):
                         continue
 
                     messages.append({"role": "assistant", "content": full_text})
-                    snap = ReconciliationTurnSnapshot(
+                    snap = BackstageTurnSnapshot(
                         player_intent_plain=content,
                         narration_to_player=full_text,
                         tool_result_contents=list(turn_tool_results),
                     )
                     await ws.send_json({"type": "done"})
-                    pending_recon = asyncio.create_task(
-                        _run_reconciliation_turn(client, session_state, snap)
+                    pending_backstage = asyncio.create_task(
+                        _run_backstage_turn(client, session_state, snap)
                     )
                     break
 

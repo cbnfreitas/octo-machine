@@ -7,7 +7,7 @@ sequenceDiagram
     participant J as Jogador 
     participant N as Narrador (LLM)
     participant T as Tools (Non-LLM)
-    participant R as Reconciliation (LLM)
+    participant R as Backstage (LLM)
 
     par Mesmo tempo
         J->>N: Intenção (sync)

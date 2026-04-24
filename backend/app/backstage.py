@@ -1,5 +1,5 @@
 """
-Reconciliation LLM: reads the turn and updates engine state via tools (e.g. acrobatics fatigue).
+Backstage LLM: reads the turn and updates engine state via tools (e.g. acrobatics fatigue).
 """
 
 from __future__ import annotations
@@ -14,65 +14,66 @@ from typing import Any, cast
 from openai import OpenAI
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletionToolUnionParam
 
+from app.backstage_prompt import backstage_system_prompt
 from app.internal_acrobatics import fatigue_label_for_context
 from app.logging_config import logger
 from app.participants import AsyncChannel
-from app.reconciliation_prompt import reconciliation_system_prompt
 from app.session_state import GameSessionState
+
 
 def _hhmm() -> str:
     return datetime.now().strftime("%H:%M")
 
 
-_RECONCILIATION_MODEL = os.getenv("RECONCILIATION_MODEL") or os.getenv("OPENAI_MODEL", "gpt-5-mini")
+_BACKSTAGE_MODEL = os.getenv("BACKSTAGE_MODEL") or os.getenv("OPENAI_MODEL", "gpt-5-mini")
 _MAX_DELTA_PER_TURN = 50.0
 _MAX_TOOL_ATTEMPTS = 3
 
 ADJUST_FATIGUE_TOOL_NAME = "adjust_acrobatics_fatigue"
 
-RECONCILIATION_TOOLS: list[ChatCompletionToolUnionParam] = cast(
+BACKSTAGE_TOOLS: list[ChatCompletionToolUnionParam] = cast(
     list[ChatCompletionToolUnionParam],
     [
-    {
-        "type": "function",
-        "function": {
-            "name": ADJUST_FATIGUE_TOOL_NAME,
-            "description": (
-                "Aplica mudança aditiva à fadiga interna (acrobacia), 0–100 no motor. "
-                "Negativo recupera; positivo acumula cansaço. O motor faz clamp final."
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "delta": {
-                        "type": "number",
-                        "description": (
-                            "Pontos a somar à fadiga (ex.: -15 após descanso, +8 após esforço). "
-                            "Use 0 se o turno não alterar o cansaço."
-                        ),
+        {
+            "type": "function",
+            "function": {
+                "name": ADJUST_FATIGUE_TOOL_NAME,
+                "description": (
+                    "Aplica mudança aditiva à fadiga interna (acrobacia), 0–100 no motor. "
+                    "Negativo recupera; positivo acumula cansaço. O motor faz clamp final."
+                ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "delta": {
+                            "type": "number",
+                            "description": (
+                                "Pontos a somar à fadiga (ex.: -15 após descanso, +8 após esforço). "
+                                "Use 0 se o turno não alterar o cansaço."
+                            ),
+                        },
+                        "reason": {
+                            "type": "string",
+                            "description": "Justificativa curta para log técnico (PT-BR).",
+                        },
                     },
-                    "reason": {
-                        "type": "string",
-                        "description": "Justificativa curta para log técnico (PT-BR).",
-                    },
+                    "required": ["delta", "reason"],
                 },
-                "required": ["delta", "reason"],
             },
-        },
-    }
+        }
     ],
 )
 
 
 @dataclass(frozen=True)
-class ReconciliationTurnSnapshot:
+class BackstageTurnSnapshot:
     player_intent_plain: str
     narration_to_player: str
     tool_result_contents: list[str]
     hidden_beyond_player_perception: str = ""
 
 
-def _build_reconciliation_user_content(snap: ReconciliationTurnSnapshot, fatigue_before: float) -> str:
+def _build_backstage_user_content(snap: BackstageTurnSnapshot, fatigue_before: float) -> str:
     label = fatigue_label_for_context(fatigue_before)
     tools_block = (
         "\n---\n".join(snap.tool_result_contents) if snap.tool_result_contents else "(nenhum resultado de tool neste turno)"
@@ -114,20 +115,20 @@ def _parse_adjust_call(arguments_json: str) -> tuple[float, str]:
     return delta, reason.strip()
 
 
-async def apply_reconciliation_llm(client: OpenAI, state: GameSessionState, snap: ReconciliationTurnSnapshot) -> None:
+async def apply_backstage_llm(client: OpenAI, state: GameSessionState, snap: BackstageTurnSnapshot) -> None:
     async with state.lock:
         fatigue_before = state.fatigue_percent
 
-    user_content = _build_reconciliation_user_content(snap, fatigue_before)
+    user_content = _build_backstage_user_content(snap, fatigue_before)
     messages: list[ChatCompletionMessageParam] = [
-        {"role": "system", "content": reconciliation_system_prompt()},
+        {"role": "system", "content": backstage_system_prompt()},
         {"role": "user", "content": user_content},
     ]
 
     logger.info(
-        "[%s] [reconciliation_llm] model=%s fatigue_before=%.1f intent_preview=%r",
+        "[%s] [backstage_llm] model=%s fatigue_before=%.1f intent_preview=%r",
         _hhmm(),
-        _RECONCILIATION_MODEL,
+        _BACKSTAGE_MODEL,
         fatigue_before,
         (snap.player_intent_plain[:100] + "…") if len(snap.player_intent_plain) > 100 else snap.player_intent_plain,
     )
@@ -136,9 +137,9 @@ async def apply_reconciliation_llm(client: OpenAI, state: GameSessionState, snap
     for attempt in range(_MAX_TOOL_ATTEMPTS):
         def _create() -> Any:
             return client.chat.completions.create(
-                model=_RECONCILIATION_MODEL,
+                model=_BACKSTAGE_MODEL,
                 messages=messages,
-                tools=RECONCILIATION_TOOLS,
+                tools=BACKSTAGE_TOOLS,
                 tool_choice={
                     "type": "function",
                     "function": {"name": ADJUST_FATIGUE_TOOL_NAME},
@@ -152,12 +153,12 @@ async def apply_reconciliation_llm(client: OpenAI, state: GameSessionState, snap
         if msg.tool_calls:
             for tc in msg.tool_calls:
                 if tc.function.name != ADJUST_FATIGUE_TOOL_NAME:
-                    logger.warning("[%s] [reconciliation_llm] ignored tool %s", _hhmm(), tc.function.name)
+                    logger.warning("[%s] [backstage_llm] ignored tool %s", _hhmm(), tc.function.name)
                     continue
                 try:
                     raw_delta, reason = _parse_adjust_call(str(tc.function.arguments or ""))
                 except (json.JSONDecodeError, ValueError) as e:
-                    logger.warning("[%s] [reconciliation_llm] bad tool arguments: %s", _hhmm(), e)
+                    logger.warning("[%s] [backstage_llm] bad tool arguments: %s", _hhmm(), e)
                     continue
                 delta, was_clamped = _clamp_delta(raw_delta)
                 async with state.lock:
@@ -166,9 +167,9 @@ async def apply_reconciliation_llm(client: OpenAI, state: GameSessionState, snap
                     after = state.fatigue_percent
                 tool_calls_executed += 1
                 logger.info(
-                    "[%s] [reconciliation_llm] %s fatigue %.1f -> %.1f (delta %+.1f%s) reason=%r",
+                    "[%s] [backstage_llm] %s fatigue %.1f -> %.1f (delta %+.1f%s) reason=%r",
                     _hhmm(),
-                    AsyncChannel.RECONCILIATION_CONTEXT_UPDATE_TO_ENGINE.value,
+                    AsyncChannel.BACKSTAGE_CONTEXT_UPDATE_TO_ENGINE.value,
                     before,
                     after,
                     delta,
@@ -188,7 +189,7 @@ async def apply_reconciliation_llm(client: OpenAI, state: GameSessionState, snap
 
     if tool_calls_executed == 0:
         logger.error(
-            "[%s] [reconciliation_llm] no valid tool call after %s attempts",
+            "[%s] [backstage_llm] no valid tool call after %s attempts",
             _hhmm(),
             _MAX_TOOL_ATTEMPTS,
         )

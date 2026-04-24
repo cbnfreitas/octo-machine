@@ -76,7 +76,7 @@ onMounted(() => {
       }
       scrollToBottom()
       focusMessageInput()
-    } else if (data.type === 'reconciliation_pending') {
+    } else if (data.type === 'backstage_pending') {
       scrollToBottom()
     } else if (data.type === 'token') {
       appendAssistantToken(data.text)
