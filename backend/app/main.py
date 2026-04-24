@@ -1,5 +1,7 @@
+import asyncio
 import json
 import os
+from datetime import datetime
 from pathlib import Path
 
 import app.logging_config  # noqa: F401 — configure uvicorn logger level
@@ -32,13 +34,17 @@ MODEL = os.getenv("OPENAI_MODEL", "gpt-5-mini")
 MAX_TOOL_ROUNDS = 8
 
 
+def _hhmm() -> str:
+    return datetime.now().strftime("%H:%M")
+
+
 async def _run_reconciliation_turn(
     client: OpenAI, state: GameSessionState, snap: ReconciliationTurnSnapshot
 ) -> None:
     try:
         await apply_reconciliation_llm(client, state, snap)
     except Exception:
-        logger.exception("[reconciliation] turn failed")
+        logger.exception("%s [reconciliation] turn failed", _hhmm())
 
 
 def _streamed_tool_calls_are_complete(tool_calls_list: list[dict[str, object]]) -> bool:
@@ -205,6 +211,8 @@ async def chat(ws: WebSocket):
     messages.append({"role": "assistant", "content": opening_text})
     messages[1] = {"role": "user", "content": OPENING_USER_PLACEHOLDER}
 
+    pending_recon: asyncio.Task | None = None
+
     try:
         while True:
             raw = await ws.receive_text()
@@ -217,6 +225,15 @@ async def chat(ws: WebSocket):
             content = (payload.get("content") or "").strip()
             if not content:
                 continue
+
+            if pending_recon is not None:
+                if not pending_recon.done():
+                    await ws.send_json({"type": "reconciliation_pending"})
+                    try:
+                        await pending_recon
+                    except Exception:
+                        logger.exception("[%s] [chat] wait for reconciliation failed", _hhmm())
+                pending_recon = None
 
             turn_start = len(messages)
             async with session_state.lock:
@@ -262,7 +279,8 @@ async def chat(ws: WebSocket):
                             tname = str(fn["name"])
                             targs = str(fn.get("arguments", ""))
                             logger.info(
-                                "[narrator_llm -> engine] tool_call id=%s name=%s args=%s",
+                                "[%s] [narrator_llm -> engine] tool_call id=%s name=%s args=%s",
+                                _hhmm(),
                                 str(tc.get("id", "")),
                                 yellow_tool(tname),
                                 targs[:4000] + ("…" if len(targs) > 4000 else ""),
@@ -284,8 +302,10 @@ async def chat(ws: WebSocket):
                         narration_to_player=full_text,
                         tool_result_contents=list(turn_tool_results),
                     )
-                    await _run_reconciliation_turn(client, session_state, snap)
                     await ws.send_json({"type": "done"})
+                    pending_recon = asyncio.create_task(
+                        _run_reconciliation_turn(client, session_state, snap)
+                    )
                     break
 
             except Exception as e:

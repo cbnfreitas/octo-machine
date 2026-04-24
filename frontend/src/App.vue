@@ -8,6 +8,7 @@ const input = ref('')
 const messages = ref([])
 const connected = ref(false)
 const sending = ref(false)
+const openingBusy = ref(false)
 const errorBanner = ref('')
 const scrollPanelRef = ref(null)
 const messageInputRef = ref(null)
@@ -58,6 +59,7 @@ onMounted(() => {
   socket.onmessage = (ev) => {
     const data = JSON.parse(ev.data)
     if (data.type === 'opening_start') {
+      openingBusy.value = true
       messages.value.push({
         role: 'assistant',
         text: '',
@@ -66,6 +68,7 @@ onMounted(() => {
       })
       scrollToBottom()
     } else if (data.type === 'opening_done') {
+      openingBusy.value = false
       const last = messages.value[messages.value.length - 1]
       if (last && last.role === 'assistant') {
         last.streaming = false
@@ -73,6 +76,8 @@ onMounted(() => {
       }
       scrollToBottom()
       focusMessageInput()
+    } else if (data.type === 'reconciliation_pending') {
+      scrollToBottom()
     } else if (data.type === 'token') {
       appendAssistantToken(data.text)
       scrollToBottom()
@@ -88,6 +93,7 @@ onMounted(() => {
     } else if (data.type === 'error') {
       errorBanner.value = data.message
       sending.value = false
+      openingBusy.value = false
       const last = messages.value[messages.value.length - 1]
       if (last && last.role === 'assistant' && last.streaming) {
         last.streaming = false
@@ -190,7 +196,7 @@ function send() {
           dense
           dark
           placeholder=">"
-          :disable="!connected || sending"
+          :disable="!connected || sending || openingBusy"
           @keyup.enter.exact="send"
         >
           <template #append>
@@ -200,7 +206,7 @@ function send() {
               flat
               icon="send"
               class="retro-send-btn"
-              :disable="!connected || sending"
+              :disable="!connected || sending || openingBusy"
               aria-label="Send"
               @click="send"
             />

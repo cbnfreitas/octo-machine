@@ -8,6 +8,7 @@ import asyncio
 import json
 import os
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any, cast
 
 from openai import OpenAI
@@ -18,6 +19,10 @@ from app.logging_config import logger
 from app.participants import AsyncChannel
 from app.reconciliation_prompt import reconciliation_system_prompt
 from app.session_state import GameSessionState
+
+def _hhmm() -> str:
+    return datetime.now().strftime("%H:%M")
+
 
 _RECONCILIATION_MODEL = os.getenv("RECONCILIATION_MODEL") or os.getenv("OPENAI_MODEL", "gpt-5-mini")
 _MAX_DELTA_PER_TURN = 50.0
@@ -120,8 +125,8 @@ async def apply_reconciliation_llm(client: OpenAI, state: GameSessionState, snap
     ]
 
     logger.info(
-        "[%s] model=%s fatigue_before=%.1f intent_preview=%r",
-        "reconciliation_llm",
+        "[%s] [reconciliation_llm] model=%s fatigue_before=%.1f intent_preview=%r",
+        _hhmm(),
         _RECONCILIATION_MODEL,
         fatigue_before,
         (snap.player_intent_plain[:100] + "…") if len(snap.player_intent_plain) > 100 else snap.player_intent_plain,
@@ -147,12 +152,12 @@ async def apply_reconciliation_llm(client: OpenAI, state: GameSessionState, snap
         if msg.tool_calls:
             for tc in msg.tool_calls:
                 if tc.function.name != ADJUST_FATIGUE_TOOL_NAME:
-                    logger.warning("[%s] ignored tool %s", "reconciliation_llm", tc.function.name)
+                    logger.warning("[%s] [reconciliation_llm] ignored tool %s", _hhmm(), tc.function.name)
                     continue
                 try:
                     raw_delta, reason = _parse_adjust_call(str(tc.function.arguments or ""))
                 except (json.JSONDecodeError, ValueError) as e:
-                    logger.warning("[%s] bad tool arguments: %s", "reconciliation_llm", e)
+                    logger.warning("[%s] [reconciliation_llm] bad tool arguments: %s", _hhmm(), e)
                     continue
                 delta, was_clamped = _clamp_delta(raw_delta)
                 async with state.lock:
@@ -161,8 +166,8 @@ async def apply_reconciliation_llm(client: OpenAI, state: GameSessionState, snap
                     after = state.fatigue_percent
                 tool_calls_executed += 1
                 logger.info(
-                    "[%s] %s fatigue %.1f -> %.1f (delta %+.1f%s) reason=%r",
-                    "reconciliation_llm",
+                    "[%s] [reconciliation_llm] %s fatigue %.1f -> %.1f (delta %+.1f%s) reason=%r",
+                    _hhmm(),
                     AsyncChannel.RECONCILIATION_CONTEXT_UPDATE_TO_ENGINE.value,
                     before,
                     after,
@@ -182,4 +187,8 @@ async def apply_reconciliation_llm(client: OpenAI, state: GameSessionState, snap
         )
 
     if tool_calls_executed == 0:
-        logger.error("[%s] no valid tool call after %s attempts", "reconciliation_llm", _MAX_TOOL_ATTEMPTS)
+        logger.error(
+            "[%s] [reconciliation_llm] no valid tool call after %s attempts",
+            _hhmm(),
+            _MAX_TOOL_ATTEMPTS,
+        )
