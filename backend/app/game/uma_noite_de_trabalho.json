@@ -7,7 +7,7 @@
     {
       "region_name": "Casa do Fatso",
       "description": "Casa árabe.",
-      "events": ["Furtividade, o Vigia pode acordar! Ele irá tentar expulsar o ladrão e lutar. Provavelmente matará a menos que necesário para se defender ou ao Fatso."],
+      "events": ["Segredo: A cada meia hora dento da casa, o narrador deve testar furtividade. A dificuldade é aumentada se o jogador estiver fazendo barulho, acendendo luzes, etc. Se o jogador falhar, o vigia aparecerá e lutará com o jogador."],
       "npcs": [
         {
           "npc_name": "Max",

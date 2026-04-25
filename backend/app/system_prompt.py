@@ -41,6 +41,7 @@ def opening_turn_user_content(*, fatigue_percent: float = 0.0, game_clock_minute
         game_clock_minutes=game_clock_minutes,
         current_place_name=None,
         known_place_names=(),
+        stash_items=(),
     )
     return (
         f"{turn}\n\n"
