@@ -18,6 +18,7 @@ from openai.types.chat import (
 )
 from app.messaging import build_turn_user_content
 from app.backstage import BackstageTurnSnapshot, apply_backstage_llm
+from app.feature_flags import scene_images_enabled
 from app.session_state import GameSessionState
 from app.system_prompt import (
     OPENING_USER_PLACEHOLDER,
@@ -46,6 +47,8 @@ def _hhmm() -> str:
 
 
 async def _push_scene_image_from_move_result(ws: WebSocket, tool_name: str, result_json: str) -> None:
+    if not scene_images_enabled():
+        return
     if tool_name != "move":
         return
     try:
@@ -113,11 +116,15 @@ async def _stream_model_round(
     *,
     forward_tokens: bool = True,
     use_tools: bool = True,
-) -> tuple[str, bool, list[ChatCompletionMessageFunctionToolCallParam], int]:
+    buffer_tokens_until_tool_round_complete: bool = False,
+) -> tuple[str, bool, list[ChatCompletionMessageFunctionToolCallParam], int, list[str]]:
     """
     One streamed completion. Forwards text deltas to the client when forward_tokens is True.
-    Returns (full_text, has_tool_calls, typed_calls, forwarded_token_events).
+    Returns (full_text, has_tool_calls, typed_calls, forwarded_token_events, pending_token_chunks).
     When has_tool_calls is True, typed_calls must be executed and the conversation continued.
+    If buffer_tokens_until_tool_round_complete and use_tools, content deltas are held in
+    pending_token_chunks until the caller runs tools and scene_image, then the caller must
+    forward them — so narration does not appear before move + scene_image in the same turn.
     """
     if use_tools:
         stream = client.chat.completions.create(
@@ -138,6 +145,10 @@ async def _stream_model_round(
     assistant_parts: list[str] = []
     tool_calls_by_index: dict[int, dict[str, object]] = {}
     forwarded_token_events = 0
+    pending_token_chunks: list[str] = []
+    buffer_mode = bool(
+        forward_tokens and use_tools and buffer_tokens_until_tool_round_complete
+    )
 
     for chunk in stream:
         if not chunk.choices:
@@ -147,8 +158,11 @@ async def _stream_model_round(
         if delta and delta.content:
             assistant_parts.append(delta.content)
             if forward_tokens:
-                await ws.send_json({"type": "token", "text": delta.content})
-                forwarded_token_events += 1
+                if buffer_mode:
+                    pending_token_chunks.append(delta.content)
+                else:
+                    await ws.send_json({"type": "token", "text": delta.content})
+                    forwarded_token_events += 1
         if delta and delta.tool_calls:
             for tc in delta.tool_calls:
                 idx = tc.index
@@ -174,7 +188,11 @@ async def _stream_model_round(
     has_tools = _streamed_tool_calls_are_complete(tool_calls_list)
 
     if not has_tools:
-        return full_text, False, [], forwarded_token_events
+        if buffer_mode and pending_token_chunks:
+            for piece in pending_token_chunks:
+                await ws.send_json({"type": "token", "text": piece})
+                forwarded_token_events += 1
+        return full_text, False, [], forwarded_token_events, []
 
     typed_calls: list[ChatCompletionMessageFunctionToolCallParam] = []
     for tc in tool_calls_list:
@@ -190,7 +208,13 @@ async def _stream_model_round(
                 },
             }
         )
-    return full_text, True, typed_calls, forwarded_token_events
+    return (
+        full_text,
+        True,
+        typed_calls,
+        forwarded_token_events,
+        list(pending_token_chunks) if buffer_mode else [],
+    )
 
 
 @app.get("/health")
@@ -222,7 +246,7 @@ async def chat(ws: WebSocket):
     ]
     await ws.send_json({"type": "opening_start"})
     opening_scene_url = public_scene_image_url_for_place(STARTING_PLACE_NAME)
-    if opening_scene_url:
+    if scene_images_enabled() and opening_scene_url:
         await ws.send_json(
             {
                 "type": "scene_image",
@@ -236,7 +260,7 @@ async def chat(ws: WebSocket):
     forwarded = 0
     try:
         try:
-            opening_text, opening_tools, _, forwarded = await _stream_model_round(
+            opening_text, opening_tools, _, forwarded, _ = await _stream_model_round(
                 client,
                 ws,
                 messages,
@@ -313,8 +337,13 @@ async def chat(ws: WebSocket):
                         )
                         break
 
-                    full_text, has_tools, typed_calls, _ = await _stream_model_round(
-                        client, ws, messages
+                    full_text, has_tools, typed_calls, _, pending_token_chunks = (
+                        await _stream_model_round(
+                            client,
+                            ws,
+                            messages,
+                            buffer_tokens_until_tool_round_complete=True,
+                        )
                     )
 
                     if has_tools:
@@ -348,6 +377,8 @@ async def chat(ws: WebSocket):
                                     "content": result,
                                 }
                             )
+                        for piece in pending_token_chunks:
+                            await ws.send_json({"type": "token", "text": piece})
                         continue
 
                     messages.append({"role": "assistant", "content": full_text})

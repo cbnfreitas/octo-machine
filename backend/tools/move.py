@@ -9,6 +9,7 @@ from typing import Any
 from openai.types.chat import ChatCompletionToolUnionParam
 
 from app.game_clock import parse_initial_game_time
+from app.feature_flags import scene_images_enabled
 from app.session_state import GameSessionState
 
 from .invoke import invoke_tool
@@ -17,18 +18,26 @@ _GAME_MAP_JSON = Path(__file__).resolve().parent.parent / "app" / "game" / "uma_
 GAME_MAP_BASENAME = _GAME_MAP_JSON.name
 STARTING_PLACE_NAME = "Cozinha"
 
-TOOL_SYSTEM_INSTRUCTION = (
-    "Quando o jogador **mudar de lugar** ou **ir para outro cômodo**, chame `move` com "
-    "`place_name` **exatamente** como no mapa (ex.: \"Cozinha\", \"Salão\", \"Despensa\"). "
-    "A saída traz `description` e `player_facing_summary` **já filtrados** (sem blocos de "
-    "segredo/armadilha do arquivo bruto); use isso como base ao chegar. O campo `description_full` "
-    "é o texto integral do mapa—**só** use trechos ocultos quando o jogador **tiver explorado "
-    "de forma pertinente**; nunca copie `description_full` inteiro de uma vez para o jogador. "
-    "Na **primeira vez** que o `move` registra a entrada a um lugar **nesta sessão**, se existir "
-    "ilustração na pasta do jogo (pasta do mapa, ficheiro `<slug-do-lugar>.png` ou semelhante), "
-    "o JSON inclui **`place_scene_image`** com `url` — a interface do jogador **mostra** essa arte "
-    "automaticamente; integre a cena na prosa sem contradizer o visual."
-)
+def _tool_system_instruction() -> str:
+    base = (
+        "Quando o jogador **mudar de lugar** ou **ir para outro cômodo**, chame `move` com "
+        "`place_name` **exatamente** como no mapa (ex.: \"Cozinha\", \"Salão\", \"Despensa\"). "
+        "A saída traz `description` e `player_facing_summary` **já filtrados** (sem blocos de "
+        "segredo/armadilha do arquivo bruto); use isso como base ao chegar. O campo `description_full` "
+        "é o texto integral do mapa—**só** use trechos ocultos quando o jogador **tiver explorado "
+        "de forma pertinente**; nunca copie `description_full` inteiro de uma vez para o jogador."
+    )
+    if scene_images_enabled():
+        return (
+            f"{base} Na **primeira vez** que o `move` registra a entrada a um lugar **nesta sessão**, "
+            "se existir ilustração na pasta do jogo (pasta do mapa, ficheiro `<slug-do-lugar>.png` "
+            "ou semelhante), o JSON inclui **`place_scene_image`** com `url` — a interface do jogador "
+            "**mostra** essa arte automaticamente; integre a cena na prosa sem contradizer o visual."
+        )
+    return base
+
+
+TOOL_SYSTEM_INSTRUCTION = _tool_system_instruction()
 
 TOOL: ChatCompletionToolUnionParam = {
     "type": "function",
@@ -262,13 +271,11 @@ def move_to_place(
     if session_state is not None:
         first_visit = resolved not in session_state.places_entered_via_move
         public = _public_scene_image_path(resolved)
-        if first_visit and public is not None:
+        if scene_images_enabled() and first_visit and public is not None:
             result["place_scene_image"] = {
                 "url": public,
                 "place_name": resolved,
-                "note": (
-                    "First visit this session; the player client shows this image automatically."
-                ),
+                "note": "First visit this session; scene image feature is enabled.",
             }
         session_state.places_entered_via_move.add(resolved)
 

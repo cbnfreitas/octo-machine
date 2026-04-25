@@ -1261,7 +1261,7 @@ especiarias comuns. Vinte deles têm nomes de ervas aromáticas moderadamente
 raras. Quatro têm o nome de ervas realmente difíceis de se obter. Cinco
 não têm rótulo.
 Se desejar levar algum dos frascos, desvie para [142](#142).
-Se desejar abrir algum dos frascos, vá para [135](#135).
+Se desejar abrir algum dos frascos, vá para [135](#135). ERRO!
 Se preferir ignorá-los, vá para [176](#176).
 
 <a id="102"></a>

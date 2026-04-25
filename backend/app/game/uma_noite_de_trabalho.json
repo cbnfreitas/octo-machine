@@ -5,119 +5,105 @@
   "narrator_opening_note": "Mantém coerência com a intro: entrada pela janela até o lugar inicial do mapa.",
   "places": [
     {
-      "place_name": "Entrada",
-      "connections": [
-        "Sala Principal"
+      "place_name": "Casa do Fatso",
+      "description": "Casa árabe.",
+      "events": ["Furtividade, o Vigia pode acordar! Ele irá tentar expulsar o ladrão e lutar. Provavelmente matará a menos que necesário para se defender ou ao Fatso."],
+      "npcs": [
+        {
+          "npc_name": "Max",
+          "prompt": "",
+          "description": "Vigia da casa, analfabeto. Cimitarra"
+        },
+        {
+          "npc_name": "Fatso",
+          "prompt": "",
+          "description": "Velho, agiota, rico e paranóico."
+        }
       ],
-      "description": "Porta de madeira reforçada voltada ao sul, com ferro envelhecido. Chão de pedra irregular com areia. Um banco baixo com sandálias gastas e um jarro de água com concha. Ganchos seguram capas. Segredo: uma pedra solta no canto leste esconde moedas pequenas — coerente com esconderijos simples usados por moradores."
-    },
-    {
-      "place_name": "Sala Principal",
-      "connections": [
-        "Entrada",
-        "Salão",
-        "Cozinha",
-        "Despensa",
-        "Escada"
-      ],
-      "description": "Vestíbulo ampliado (3m x 3m), eixo da casa. Espaço simples com paredes de argila. Uma pequena mesa com vela apagada. É o hub: ao norte leva ao grande salão, a leste à cozinha, e nordeste à despensa. Há também uma escada que sobe. Aqui não há tesouros relevantes, mas é ponto crítico de circulação (onde encontros com o vigia podem acontecer)."
-    },
-    {
-      "place_name": "Salão",
-      "connections": [
-        "Sala Principal",
-        "Quarto do Vigia",
-        "Saída para Rua"
-      ],
-      "description": "Salão amplo com pé-direito alto. Piso coberto por tapetes, sofá com 3 almofadas e mesa baixa. 4 estátuas ocupam as paredes. Objetos: narguilé, livros, tapeçarias nas paredes. Tesouros: tapeçaria valiosa (alto valor), almofada vermelha com objeto escondido dentro, uma das estátuas contém um amuleto escondido. Segredo: a porta ao norte leva diretamente à rua, embora pareça apenas mais uma porta interna."
-    },
-    {
-      "place_name": "Cozinha",
-      "connections": [
-        "Sala Principal",
-        "Despensa",
-        "Exterior via Janela"
-      ],
-      "description": "Cozinha com fogão a lenha ainda com brasas, panela com tampa, mesa com vela e utensílios. Panelas de ferro, faca, alimentos simples. Uma janela larga permite entrada/saída. comida, utensílios. Não há tesouros principais aqui, mas é rota de entrada e fuga.",
-      "notes": [
-        "Utensílios e caldeirões de luxo pesados demais para levar na sacola; dono aparentemente rico.",
-        "Janela larga é a principal rota de fuga rápida e também permite reentrada mais tarde, com a casa em alerta.",
-        "Brasas permitem acender a vela para levar iluminação portátil com peso modesto.",
-        "Sob o balcão há panelas e uma frigideira pesada de ferro fundido, útil como saque ou arma improvisada com manejo difícil.",
-        "Guisado comível: pode aliviar fadiga leve; comer demais por gula debilita o personagem por horas.",
-        "Frasco de pimenta em pó usado de perto pode cegar o vigia momentaneamente e abrir corrida à janela enquanto alarme ou apito soa na casa."
-      ],
-      "triggers": [
-        "Ao entrar na cozinha, fazer um teste de furtividade com penalidade por pressa;"
+      "rooms": [
+        {
+          "room_name": "Cozinha",
+          "description": "Faca, guisado, 2 cadeiras, água, vela castiçal. Chão e paredes pedra polida, levemente irregular.",
+          "connections": [
+            {"to": "Vestíbulo", "how": "porta norte" },
+            {"to": "Chafariz", "how": "janela leste" },
+            {"to": "Rua",  "how": "janela sul" }
+          ]
+        },
+        {
+          "room_name": "Vestíbulo",
+          "description": "Hall com pé direito duplo, vitral do lado sul bem no alto. Luz da lua entrando. Dá acesso a várias partes da casa.",
+          "connections": [
+            {"to": "Quarto do Fatso", "how": "uma escadaria subindo, começa a oeste, virando para o norte encostada na parte. Há uma corrimão de madeira e um pequeno mezanino que dá pra porta, no topo. A porta é ricamente ornada com um relevo de madeira." },
+            {"to": "Despensa", "how": "porta simples menor, a sudoeste" },
+            {"to": "São Principal",  "how": "passagem a leste" },
+            {"to": "Quarto do Max",  "how": "pequena abertura para ventilação, um pouco abaixo do nível do mezanino." }
+          ]
+        },
+        {
+          "room_name": "São Principal",
+          "description": "Pé direito duplo, tapetes, sofá almofadas, 4 estátuas, tapeçarias, narguilés, arabesco no chão.",
+          "connections": [
+            {"to": "Vestíbulo", "how": "passagem a sudoeste" },
+            {"to": "Quarto do Max", "how": "porta simples, noroeste" },
+            {"to": "Pátio interno", "how": "porta e janelas à leste" },
+            {"to": "Chafariz",  "how": "ao sul, uma treliça de madeira vazada, não dá passagem, só visão. Parcialmente coberta por uma cortina" }
+          ]
+        },
+        {
+          "room_name": "São Principal",
+          "description": "Pé direito duplo, tapetes, sofá almofadas, 4 estátuas, tapeçarias, narguilés, arabesco no chão.",
+          "connections": [
+            {"to": "Vestíbulo", "how": "passagem a sudoeste" },
+            {"to": "Quarto do Max", "how": "porta simples, noroeste. Imediatamente acima da porta há uma treliça de madeira vazada para luz e ventilação." },
+            {"to": "Pátio interno", "how": "porta grande e janelas à leste" },
+            {"to": "Chafariz",  "how": "ao sul, uma treliça de madeira vazada, não dá passagem, só visão. Parcialmente coberta por uma cortina" }
+          ]
+        },
+        {
+          "room_name": "Pátio interno",
+          "description": "Arborizado. Um caminho de pedras ligando a porta para a rua até o salão principal.",
+          "connections": [
+            {"to": "Salão Principal", "how": "porta grande ornada com um relevo de madeira a noroeste" },
+            {"to": "Chafariz",  "how": "sem portas ou barreiras, conexão a sudoeste" },
+            {"to": "Rua",  "how": "porta ao sul" }
+          ]
+        },
+        {
+          "room_name": "Despensa",
+          "description": "Prateleiras, armários, barris. Muito escuro. Sem janela",
+          "connections": [
+            {"to": "Vestíbulo", "how": "porta a leste" },
+            {"to": "Porão",  "how": "alçapão no assoalho, escondido abaixo de um barril. Escada que desce." }
+          ]
+        },
+        {
+          "room_name": "Porão",
+          "description": "Caixas, garrafas, estáticas, ainda mais escuro!",
+          "connections": [
+            {"to": "Despensa", "how": "subindo pela escada, saindo do alçapão" }
+          ]
+        },
+        {
+          "room_name": "Quarto do Fatso",
+          "description": "Estatuetas, armário roupas, arte, sineta",
+          "connections": [
+            {"to": "Vestíbulo", "how": "porta sul" },
+            {"to": "Rua", "how": "janela a oeste sul, dá pra ver o mar daqui." },
+            {"to": "Quarto do Max", "how": "Alçapão: secreto, ao puxa com força a sineta, o alçapão se abre. A queda é de alguns metros, podendo cair até sobre o Max se ele estiver dormindo." }
+          ]
+        }
+        ,
+        {
+          "room_name": "Quarto do Max",
+          "description": "Simples, uma esteira, uma cimitarra e um baú",
+          "connections": [
+            {"to": "São Principal", "how": "porta leste, com uma treliça de madeira vazada para luz e ventilação acima da porta." },
+            {"to": "Vestíbulo", "how": "pequena saída de ar ao sul." },
+            {"to": "Quarto do Fatso", "how": "Alçapão, mecanismo secreto no teto" }
+          ]
+        }
       ]
-    },
-    {
-      "place_name": "Despensa",
-      "connections": [
-        "Sala Principal",
-        "Cozinha",
-        "Depósito Subterrâneo",
-        "Porão Escuro"
-      ],
-      "description": "Sala com prateleiras cheias de potes, ervas e mantimentos. Vários frascos: alguns com especiarias, outros com conteúdo estranho (aranha viva, pomada de queimadura, pó irritante tipo pimenta). Barris ocupam o chão. Segredo importante: um alçapão escondido sob as tábuas leva ao subsolo. Armadilha: alguns barris podem rolar causando dano ou barulho."
-    },
-    {
-      "place_name": "Depósito Subterrâneo",
-      "connections": [
-        "Despensa"
-      ],
-      "description": "Grande espaço subterrâneo com três áreas: prateleiras de vinho (~2 dúzias de garrafas), barris empilhados (~2 dúzias), e sucata (caixas e objetos). Tesouro principal: um barril contém um fundo falso com fechadura escondida (cofre). Dentro há papéis e uma bolsa selada. Segredo crítico: a bolsa contém pedras preciosas, mas abrir o lacre ativa uma armadilha mágica (fim da aventura). Também há vinho raro valioso."
-    },
-    {
-      "place_name": "Porão Escuro",
-      "connections": [
-        "Despensa"
-      ],
-      "description": "Área alternativa do subsolo sem iluminação. Cheia de tralhas e caixas pesadas. Uma caixa instável pode cair e ferir a perna do personagem. Sem tesouros principais, mas serve como perigo e desorientação."
-    },
-    {
-      "place_name": "Escada",
-      "connections": [
-        "Sala Principal",
-        "Quarto do Dono"
-      ],
-      "description": "Escada estreita de madeira que sobe e dobra à esquerda. Espaço apertado. Sem objetos relevantes, mas ponto de transição entre níveis."
-    },
-    {
-      "place_name": "Quarto do Dono",
-      "connections": [
-        "Escada"
-      ],
-      "description": "Quarto decorado com objetos de arte, cama grande e estatuetas. Fatso dorme aqui. Objetos: sineta presa ao teto com cordão ao lado da cama. Segredos: o cordão ativa um alçapão no chão (armadilha de queda). Fatso usa uma chave dourada no pescoço — essa chave abre o cofre escondido no barril no subsolo. Tesouro: bolsa de dinheiro sob o colchão."
-    },
-    {
-      "place_name": "Quarto do Vigia",
-      "connections": [
-        "Salão"
-      ],
-      "description": "Quarto simples com piso de pedra. Uma esteira no chão, cimitarra ao lado. Um armário sob a escada ocupa parte do espaço. Aqui dorme Max, o vigia. Tesouro: cimitarra valiosa. Não há segredos ocultos, mas é ponto crítico de combate."
-    },
-    {
-      "place_name": "Saída para Rua",
-      "connections": [
-        "Salão",
-        "Exterior"
-      ],
-      "description": "Porta que leva à rua/viela externa. Parece apenas mais uma porta interna quando vista do salão. Sem objetos relevantes. É uma rota de fuga importante."
-    },
-    {
-      "place_name": "Exterior via Janela",
-      "connections": [
-        "Cozinha"
-      ],
-      "description": "Lado de fora junto à parede da casa, acessível pela janela larga da cozinha. Superfície de terra ou chão batido; visão parcial do entorno."
-    },
-    {
-      "place_name": "Exterior",
-      "connections": [
-        "Saída para Rua"
-      ],
-      "description": "Rua ou viela externa, fora da casa, imediata à saída da porta."
     }
   ]
 }

@@ -1,4 +1,5 @@
 from app.messaging import format_engine_context_for_prompt
+from app.feature_flags import scene_images_enabled
 from tools import combined_tool_instructions
 from tools.move import (
     GAME_MAP_BASENAME,
@@ -104,6 +105,13 @@ def _opening_contract_for_narrator() -> str:
 
 
 def _rpg_sections() -> str:
+    scene_image_note = ""
+    if scene_images_enabled():
+        scene_image_note = (
+            "Na **primeira entrada** a um lugar nesta sessão, o JSON de `move` pode trazer "
+            "**`place_scene_image`** — a interface **mostra** essa ilustração ao jogador "
+            "automaticamente; mantenha a prosa coerente com o ambiente. "
+        )
     return (
         f"{_acrobatics_fatigue_section()}"
         "## Papel\n\n"
@@ -147,10 +155,7 @@ def _rpg_sections() -> str:
         "**conexões** (saídas, portas, vãos, corredores que daí se adivinham)—integre-as na ficção como "
         "**âncoras espaciais**, não como lista técnica. Ao voltar texto do mapa em narração, **filtre** "
         "julgamentos de tesouro/valor ou ausências categóricas para a **voz do personagem** (ver "
-        "**Ponto de vista**). Use `description_full` só para fundamentar o que for revelado depois. "
-        "Na **primeira entrada** a um lugar nesta sessão, o JSON de `move` pode trazer **`place_scene_image`** "
-        "— a interface **mostra** essa ilustração ao jogador automaticamente; mantenha a prosa coerente "
-        "com o ambiente.\n\n"
+        f"**Ponto de vista**). Use `description_full` só para fundamentar o que for revelado depois. {scene_image_note}\n\n"
         "Use **`action_outcome`** quando uma ação do jogador precise de sorte (teste, disputa, risco, "
         "oposição, **acrobacia ou esforço físico incerto**): envie **`skill`** (texto livre que descreve a "
         "manobra) e **`difficulty`** (`muito_facil`, `facil`, `medio`, `dificil`, `muito_dificil`) coerente "
