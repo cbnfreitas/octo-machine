@@ -96,14 +96,14 @@ BACKSTAGE_TOOLS: list[ChatCompletionToolUnionParam] = cast(
                         "place_description_updates": {
                             "type": "array",
                             "description": (
-                                "Lista de camadas **description** e **details** completas por lugar afetado "
+                                "Lista de camadas **basic_description** e **details** completas por lugar afetado "
                                 "(texto integral de cada camada após a mudança; coerente com a narração)."
                             ),
                             "items": {
                                 "type": "object",
                                 "properties": {
                                     "place_name": {"type": "string"},
-                                    "description": {
+                                    "basic_description": {
                                         "type": "string",
                                         "description": (
                                             "Camada principal do lugar (impressão imediata ao chegar); "
@@ -119,7 +119,7 @@ BACKSTAGE_TOOLS: list[ChatCompletionToolUnionParam] = cast(
                                         ),
                                     },
                                 },
-                                "required": ["place_name", "description", "details"],
+                                "required": ["place_name", "basic_description", "details"],
                             },
                         },
                         "scene_facts": {
@@ -177,7 +177,7 @@ def _build_backstage_user_content(
             d_prev = description[:100] + ("..." if len(description) > 100 else "")
             t_prev = details[:100] + ("..." if len(details) > 100 else "")
             dynamic_lines.append(
-                f"- {place_name}\n  description: {d_prev or '(mapa)'}\n  details: {t_prev or '(mapa)'}"
+                f"- {place_name}\n  basic_description: {d_prev or '(mapa)'}\n  details: {t_prev or '(mapa)'}"
             )
         dynamic_block = "\n".join(dynamic_lines)
     else:
@@ -207,7 +207,7 @@ def _build_backstage_user_content(
         "use **game_time_delta_minutes 0** (ou poucos minutos se a prosa indicar pausa curta real).\n\n"
         "Quando houver mudança concreta de objetos no mundo (item pego, roubado, quebrado, consumido, "
         "sumido da cena), chame também **adjust_world_state** no mesmo turno para manter consistência: "
-        "adicione item em `stash_add`, atualize **`description` e `details`** completos do lugar afetado "
+        "adicione item em `stash_add`, atualize **`basic_description` e `details`** completos do lugar afetado "
         "em `place_description_updates` e reescreva `scene_facts` para refletir posições e estados "
         "(mão, chão, stash, vela acesa, etc.)."
     )
@@ -258,7 +258,10 @@ def _parse_world_adjust(
         if not isinstance(item, dict):
             continue
         place_name = str(item.get("place_name", "")).strip()
-        description = str(item.get("description", "")).strip()
+        basic_raw = item.get("basic_description", item.get("description", ""))
+        if not isinstance(basic_raw, str):
+            basic_raw = str(basic_raw) if basic_raw is not None else ""
+        description = basic_raw.strip()
         det_raw = item.get("details", "")
         if not isinstance(det_raw, str):
             det_raw = str(det_raw) if det_raw is not None else ""

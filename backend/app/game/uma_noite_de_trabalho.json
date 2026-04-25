@@ -23,8 +23,8 @@
       "locations": [
         {
           "location_name": "Cozinha",
-          "description": "Um cômodo quente e funcional. As brasas do fogão a lenha iluminam uma mesa simples com duas cadeiras e um castiçal apagado. Cheiro agradável de comida.",
-          "details": "Utensílios de boa qualidade organizados de forma prática. Um guisado repousa sobre o forno ainda aceso, espalhando calor e cheiro forte. Chão e paredes de pedra polida irregular. Sobre a mesa há um papel com a receita do guisado.. Segredo difícil: há uma adaga de prata escondida na mesa, acomodada numa alça abaixo do tampo.",
+          "basic_description": "Um cômodo quente e funcional. As brasas do fogão a lenha iluminam uma mesa simples com duas cadeiras e um castiçal apagado. Cheiro agradável de comida.",
+          "details": "Utensílios de boa qualidade organizados de forma prática. Um guisado repousa sobre o forno ainda aceso, espalhando calor e cheiro forte. Chão e paredes de pedra polida irregular. Sobre a mesa há um papel com a receita do guisado. Segredo difícil: há uma adaga de prata escondida na mesa, acomodada numa alça abaixo do tampo.",
           "connections": [
             {"to": "Vestíbulo", "how": "porta norte" },
             {"to": "Chafariz", "how": "pequena janela leste, sem passagem" },
@@ -33,7 +33,7 @@
         },
         {
           "location_name": "Vestíbulo",
-          "description": "Um espaço circular silencioso, banhado pela luz da lua que entra por um vitral alto. Uma escada curva domina o ambiente.",
+          "basic_description": "Um espaço circular silencioso, banhado pela luz da lua que entra por um vitral alto. Uma escada curva domina o ambiente.",
           "details": "A escada começa a oeste e curva-se para o norte até um pequeno mezanino com porta ornamentada. O espaço ecoa levemente. Segredo difícil: pequena abertura de ventilação quase invisível, permite ao Max ouvir os barulhos no vestíbulo.",
           "connections": [
             {"to": "Quarto do Fatso", "how": "escadaria curva"},
@@ -45,7 +45,7 @@
         },
         {
           "location_name": "São Principal",
-          "description": "Um salão amplo e luxuoso, com pé direito alto e sombras entre tapeçarias e estátuas de mármore.",
+          "basic_description": "Um salão amplo e luxuoso, com pé direito alto e sombras entre tapeçarias e estátuas de mármore.",
           "details": "Tapetes cobrem o chão com arabescos. Sofás baixos e almofadas indicam conforto. Quatro estátuas, 2 homens e duas mulheres em poses heróicas. Tapeçarias decoram o ambiente, uma delas pequena o suficiente para ser roubada. Narguilés espalhados. Ao sul, uma treliça permite ver o chafariz no exterior da casa.",
           "connections": [
             {"to": "Vestíbulo", "how": "sudoeste"},
@@ -56,7 +56,7 @@
         },
         {
           "location_name": "Pátio interno",
-          "description": "Um espaço aberto e calmo, com vegetação sob a luz da lua.",
+          "basic_description": "Um espaço aberto e calmo, com vegetação sob a luz da lua.",
           "details": "Árvores e plantas criam sombras suaves. Caminho de pedras conecta os ambientes. O ar é fresco e contrasta com o interior da casa.",
           "connections": [
             {"to": "São Principal", "how": "porta noroeste"},
@@ -66,7 +66,7 @@
         },
         {
           "location_name": "Chafariz",
-          "description": "Um pequeno chafariz ornamentado com água corrente, refletindo a luz da lua.",
+          "basic_description": "Um pequeno chafariz ornamentado com água corrente, refletindo a luz da lua.",
           "details": "Arabescos decoram a estrutura. O som da água ajuda a mascarar ruídos próximos. Segredo fácil: há algumas moedas de prata no chafariz.",
           "connections": [
             {"to": "Cozinha", "how": "janela oeste"},
@@ -76,7 +76,7 @@
         },
         {
           "location_name": "Despensa",
-          "description": "Um cômodo escuro e apertado, cheio de prateleiras e barris. Cheiro forte de grãos e especiarias.",
+          "basic_description": "Um cômodo escuro e apertado, cheio de prateleiras e barris. Cheiro forte de grãos e especiarias.",
           "details": "Caminhos estreitos entre barris. Há 12 potes com ervas nas prateleiras. Segredo médio: alçapão escondido sob um barril leva ao porão (fácil com luz).",
           "connections": [
             {"to": "Vestíbulo", "how": "porta leste"},
@@ -85,7 +85,7 @@
         },
         {
           "location_name": "Porão",
-          "description": "Um espaço abafado e escuro, repleto de barris e caixas.",
+          "basic_description": "Um espaço abafado e escuro, repleto de barris e caixas.",
           "details": "Ainda mais escuro que a despensa. Segredo (médio / fácil com luz): barril com fechadura disfarçada. É possível abrir com a chave dourado do Fatso. Possível arrombar (médio / fácil com luz). Dentro há uma bolsa com joias e um maço de papéis, poesia erótica, deve ser valioso!",
           "connections": [
             {"to": "Despensa", "how": "escada pelo alçapão"}
@@ -93,7 +93,7 @@
         },
         {
           "location_name": "Quarto do Fatso",
-          "description": "Um quarto rico e silencioso, repleto de objetos decorativos.",
+          "basic_description": "Um quarto rico e silencioso, repleto de objetos decorativos.",
           "details": "Estatuetas, armário com roupas finas e uma sineta próxima à cama. Janela com vista distante do mar. Segredo: puxar a sineta abre um alçapão para o quarto do Max, com queda perigosa. Segredo difícil: há uma bolsa de dinheiro embaixo do colchão. Segredo difícil: tem uma chave dourada no pescoço do velho.",
           "connections": [
             {"to": "Vestíbulo", "how": "porta sul"},
@@ -103,7 +103,7 @@
         },
         {
           "location_name": "Quarto do Max",
-          "description": "Um quarto simples e funcional, com poucos pertences.",
+          "basic_description": "Um quarto simples e funcional, com poucos pertences.",
           "details": "Uma esteira no chão, uma cimitarra e um baú. O ambiente é espartano. Possível encontrar o vigia dormindo aqui.",
           "connections": [
             {"to": "São Principal", "how": "porta leste"},

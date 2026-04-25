@@ -24,11 +24,13 @@ def _tool_system_instruction() -> str:
         "`place_name` no **nome canônico** do mapa (como nas chaves de local do ficheiro JSON). "
         "Quem interpreta a fala natural do jogador e escolhe o destino correto é **você**; a tool só "
         "recebe o nome já resolvido. "
-        "A saída traz **`description`** (camada principal), **`details`** (camada extra) e "
+        "A saída traz **`basic_description`** (camada principal, impressão imediata) e "
         "`player_facing_summary` **já filtrados** (sem blocos de segredo/armadilha do arquivo bruto). "
-        "Na **primeira narração ao chegar**, ancora-te sobretudo em **`description`**; `details` serve "
-        "para profundar quando o jogador foca, pede mais ou a cena o exige. O campo **`description_full`** "
-        "junta as duas camadas (filtradas) para o que o mapa autoriza a revelar por etapas—**só** use "
+        "Na **primeira entrada** a um lugar nesta sessão (`revisit`: false), **não** enviamos o campo "
+        "**`details`** no JSON (fica reservado ao motor e ao backstage); a narração de chegada deve "
+        "apoiar-se **só** em `basic_description` e conexões. Quando **`revisit`: true**, o JSON inclui "
+        "**`details`** (camada extra) para aprofundar. O campo **`description_full`** na primeira visita "
+        "coincide com `basic_description`; em revisit junta as duas camadas filtradas—**só** use "
         "trechos ocultos quando o jogador **tiver explorado "
         "de forma pertinente**; nunca copie `description_full` inteiro de uma vez para o jogador. "
         "`connections` é uma lista de objetos com `to`, `how` e sinalizadores de passagem; use `how` "
@@ -343,8 +345,10 @@ def _description_for_player_facing(raw: str) -> str:
     return " ".join(text.split())
 
 
-def _static_place_layer(entry: dict[str, Any], key: str) -> str:
+def _static_place_layer(entry: dict[str, Any], key: str, *, alt_key: str | None = None) -> str:
     raw = entry.get(key, "")
+    if (not isinstance(raw, str) or not str(raw).strip()) and alt_key:
+        raw = entry.get(alt_key, "")
     if not isinstance(raw, str):
         return str(raw) if raw is not None else ""
     return raw.strip()
@@ -356,7 +360,7 @@ def _place_layers_for_session(
     *,
     session_state: GameSessionState | None = None,
 ) -> tuple[str, str]:
-    main = _static_place_layer(entry, "description")
+    main = _static_place_layer(entry, "basic_description", alt_key="description")
     det = _static_place_layer(entry, "details")
     if session_state is None:
         return main, det
@@ -463,10 +467,19 @@ def move_to_place(
     entry = index[resolved]
     connections = _extract_connections_from_entry(entry)
 
+    is_revisit = False
+    if session_state is not None:
+        is_revisit = resolved in session_state.places_entered_via_move
+
     main_raw, details_raw = _place_layers_for_session(resolved, entry, session_state=session_state)
-    description = _description_for_player_facing(main_raw)
+    basic_description = _description_for_player_facing(main_raw)
     details = _description_for_player_facing(details_raw)
-    description_full = description + ("\n\n" + details if details.strip() else "")
+    if is_revisit:
+        description_full = basic_description + (
+            "\n\n" + details if details.strip() else ""
+        )
+    else:
+        description_full = basic_description
 
     public_connection_hows = [
         str(c["how"])
@@ -475,22 +488,20 @@ def move_to_place(
         and bool(c.get("seems_traversable_now", False))
     ]
     connection_line = _format_connection_line(public_connection_hows)
-    player_facing_summary = f"{description}\n\n{connection_line}"
 
-    is_revisit = False
-    if session_state is not None:
-        is_revisit = resolved in session_state.places_entered_via_move
+    player_facing_summary = f"{basic_description}\n\n{connection_line}"
 
     result: dict[str, object] = {
         "place_name": resolved,
         "path_taken": path_taken,
         "revisit": is_revisit,
-        "description": description,
-        "details": details,
+        "basic_description": basic_description,
         "description_full": description_full,
         "connections": connections,
         "player_facing_summary": player_facing_summary,
     }
+    if is_revisit and details.strip():
+        result["details"] = details
 
     if session_state is not None:
         first_visit = not is_revisit
