@@ -9,6 +9,7 @@ from app.logging_config import logger, yellow_tool
 from dotenv import load_dotenv
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from openai import OpenAI
 from openai.types.chat import (
     ChatCompletionAssistantMessageParam,
@@ -25,9 +26,14 @@ from app.system_prompt import (
     opening_turn_user_content,
 )
 from tools import TOOLS, run_tool
-from tools.move import get_initial_game_clock_minutes
+from tools.move import (
+    STARTING_PLACE_NAME,
+    get_initial_game_clock_minutes,
+    public_scene_image_url_for_place,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+GAME_STATIC_ROOT = Path(__file__).resolve().parent / "game"
 load_dotenv(REPO_ROOT / ".env")
 
 API_KEY = os.getenv("OPEN_AI_API_KEY") or os.getenv("OPENAI_API_KEY")
@@ -37,6 +43,31 @@ MAX_TOOL_ROUNDS = 8
 
 def _hhmm() -> str:
     return datetime.now().strftime("%H:%M")
+
+
+async def _push_scene_image_from_move_result(ws: WebSocket, tool_name: str, result_json: str) -> None:
+    if tool_name != "move":
+        return
+    try:
+        data = json.loads(result_json)
+    except json.JSONDecodeError:
+        return
+    if not isinstance(data, dict):
+        return
+    pimg = data.get("place_scene_image")
+    if not isinstance(pimg, dict):
+        return
+    url = pimg.get("url")
+    pname = pimg.get("place_name", "")
+    if not isinstance(url, str) or not url.startswith("/"):
+        return
+    await ws.send_json(
+        {
+            "type": "scene_image",
+            "url": url,
+            "place_name": pname if isinstance(pname, str) else "",
+        }
+    )
 
 
 async def _run_backstage_turn(
@@ -71,6 +102,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.mount("/game", StaticFiles(directory=str(GAME_STATIC_ROOT)), name="game_assets")
 
 
 async def _stream_model_round(
@@ -188,6 +221,17 @@ async def chat(ws: WebSocket):
         },
     ]
     await ws.send_json({"type": "opening_start"})
+    opening_scene_url = public_scene_image_url_for_place(STARTING_PLACE_NAME)
+    if opening_scene_url:
+        await ws.send_json(
+            {
+                "type": "scene_image",
+                "url": opening_scene_url,
+                "place_name": STARTING_PLACE_NAME,
+            }
+        )
+        session_state.places_entered_via_move.add(STARTING_PLACE_NAME)
+
     opening_text = ""
     forwarded = 0
     try:
@@ -294,7 +338,8 @@ async def chat(ws: WebSocket):
                                 yellow_tool(tname),
                                 targs[:4000] + ("…" if len(targs) > 4000 else ""),
                             )
-                            result = run_tool(tname, targs)
+                            result = await run_tool(tname, targs, session_state=session_state)
+                            await _push_scene_image_from_move_result(ws, tname, result)
                             turn_tool_results.append(result)
                             messages.append(
                                 {

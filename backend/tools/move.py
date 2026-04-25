@@ -9,6 +9,7 @@ from typing import Any
 from openai.types.chat import ChatCompletionToolUnionParam
 
 from app.game_clock import parse_initial_game_time
+from app.session_state import GameSessionState
 
 from .invoke import invoke_tool
 
@@ -22,7 +23,11 @@ TOOL_SYSTEM_INSTRUCTION = (
     "A saída traz `description` e `player_facing_summary` **já filtrados** (sem blocos de "
     "segredo/armadilha do arquivo bruto); use isso como base ao chegar. O campo `description_full` "
     "é o texto integral do mapa—**só** use trechos ocultos quando o jogador **tiver explorado "
-    "de forma pertinente**; nunca copie `description_full` inteiro de uma vez para o jogador."
+    "de forma pertinente**; nunca copie `description_full` inteiro de uma vez para o jogador. "
+    "Na **primeira vez** que o `move` registra a entrada a um lugar **nesta sessão**, se existir "
+    "ilustração na pasta do jogo (pasta do mapa, ficheiro `<slug-do-lugar>.png` ou semelhante), "
+    "o JSON inclui **`place_scene_image`** com `url` — a interface do jogador **mostra** essa arte "
+    "automaticamente; integre a cena na prosa sem contradizer o visual."
 )
 
 TOOL: ChatCompletionToolUnionParam = {
@@ -90,6 +95,52 @@ def get_narrator_opening_note() -> str:
 def get_initial_game_clock_minutes() -> float:
     raw = _raw_game_document().get("initial_game_time")
     return parse_initial_game_time(raw)
+
+
+def _game_media_root() -> Path:
+    return _GAME_MAP_JSON.parent / _GAME_MAP_JSON.stem
+
+
+def _place_image_slug(place_name: str) -> str:
+    decomposed = unicodedata.normalize("NFD", place_name.casefold())
+    stripped = "".join(ch for ch in decomposed if unicodedata.category(ch) != "Mn")
+    slug = re.sub(r"[^a-z0-9]+", "_", stripped.strip("_"))
+    return slug or "place"
+
+
+def _find_scene_image_file(place_name: str) -> Path | None:
+    root = _game_media_root()
+    if not root.is_dir():
+        return None
+    slug = _place_image_slug(place_name)
+    for ext in (".png", ".webp", ".jpg", ".jpeg"):
+        candidate = root / f"{slug}{ext}"
+        if candidate.is_file():
+            return candidate
+    try:
+        for p in root.iterdir():
+            if not p.is_file():
+                continue
+            stem = p.stem.casefold()
+            if stem == slug or stem == place_name.casefold():
+                if p.suffix.lower() in {".png", ".webp", ".jpg", ".jpeg"}:
+                    return p
+    except OSError:
+        return None
+    return None
+
+
+def _public_scene_image_path(place_name: str) -> str | None:
+    path = _find_scene_image_file(place_name)
+    if path is None:
+        return None
+    rel = path.relative_to(_GAME_MAP_JSON.parent)
+    return "/game/" + rel.as_posix()
+
+
+def public_scene_image_url_for_place(place_name: str) -> str | None:
+    """`/game/...` URL when a scene image file exists for this place (no visit tracking)."""
+    return _public_scene_image_path(place_name)
 
 
 def _format_connection_line(connections: list[str]) -> str:
@@ -167,7 +218,9 @@ def _resolve_place_name(raw: str, index: dict[str, dict[str, Any]]) -> str | Non
     return None
 
 
-def move_to_place(place_name: str) -> dict[str, object]:
+def move_to_place(
+    place_name: str, *, session_state: GameSessionState | None = None
+) -> dict[str, object]:
     trimmed = place_name.strip()
     if not trimmed:
         raise ValueError("place_name must be a non-empty string")
@@ -198,7 +251,7 @@ def move_to_place(place_name: str) -> dict[str, object]:
     connection_line = _format_connection_line(connections)
     player_facing_summary = f"{description}\n\n{connection_line}"
 
-    return {
+    result: dict[str, object] = {
         "place_name": resolved,
         "description": description,
         "description_full": description_full,
@@ -206,18 +259,33 @@ def move_to_place(place_name: str) -> dict[str, object]:
         "player_facing_summary": player_facing_summary,
     }
 
+    if session_state is not None:
+        first_visit = resolved not in session_state.places_entered_via_move
+        public = _public_scene_image_path(resolved)
+        if first_visit and public is not None:
+            result["place_scene_image"] = {
+                "url": public,
+                "place_name": resolved,
+                "note": (
+                    "First visit this session; the player client shows this image automatically."
+                ),
+            }
+        session_state.places_entered_via_move.add(resolved)
 
-def run(arguments_json: str) -> str:
+    return result
+
+
+def run(arguments_json: str, *, session_state: GameSessionState | None = None) -> str:
     def execute(args: dict[str, Any]) -> dict[str, object]:
         name = args["place_name"]
         if not isinstance(name, str):
             raise TypeError("place_name must be a string")
-        return move_to_place(name)
+        return move_to_place(name, session_state=session_state)
 
     return invoke_tool(
         "move",
         arguments_json,
         execute,
-        log_line=lambda r: "place_name=%r connections=%s"
-        % (r["place_name"], r["connections"]),
+        log_line=lambda r: "place_name=%r connections=%s scene=%s"
+        % (r["place_name"], r["connections"], "yes" if r.get("place_scene_image") else "no"),
     )

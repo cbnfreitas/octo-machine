@@ -4,6 +4,18 @@ import { formatChatHtml } from './chatFormat.js'
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws/chat'
 
+function httpOriginFromWsUrl(wsUrl) {
+  try {
+    const u = new URL(wsUrl)
+    u.protocol = u.protocol === 'wss:' ? 'https:' : 'http:'
+    return u.origin
+  } catch {
+    return 'http://127.0.0.1:8000'
+  }
+}
+
+const HTTP_ORIGIN = import.meta.env.VITE_HTTP_ORIGIN || httpOriginFromWsUrl(WS_URL)
+
 const input = ref('')
 const messages = ref([])
 const connected = ref(false)
@@ -77,6 +89,15 @@ onMounted(() => {
       scrollToBottom()
       focusMessageInput()
     } else if (data.type === 'backstage_pending') {
+      scrollToBottom()
+    } else if (data.type === 'scene_image') {
+      const rel = typeof data.url === 'string' ? data.url : ''
+      const abs = rel.startsWith('http') ? rel : `${HTTP_ORIGIN}${rel}`
+      const last = messages.value[messages.value.length - 1]
+      if (last && last.role === 'assistant') {
+        last.sceneImageUrl = abs
+        last.scenePlaceName = typeof data.place_name === 'string' ? data.place_name : ''
+      }
       scrollToBottom()
     } else if (data.type === 'token') {
       appendAssistantToken(data.text)
@@ -169,20 +190,41 @@ function send() {
                 :stamp="m.stamp"
                 class="retro-chat-msg retro-chat-msg--narrator"
               >
-                <span
-                  v-if="m.streaming && !m.text"
-                  class="typing-dots"
-                  aria-hidden="true"
-                >
-                  <span class="typing-dots__dot" />
-                  <span class="typing-dots__dot" />
-                  <span class="typing-dots__dot" />
-                </span>
                 <div
-                  v-else-if="m.text"
-                  class="chat-msg-html"
-                  v-html="formatChatHtml(m.text)"
-                />
+                  class="narrator-msg-body"
+                  :class="{ 'narrator-msg-body--with-scene': m.sceneImageUrl }"
+                >
+                  <div
+                    v-if="m.sceneImageUrl"
+                    class="narrator-msg-scene-col"
+                  >
+                    <div class="scene-image-wrap">
+                      <img
+                        :src="m.sceneImageUrl"
+                        class="scene-image"
+                        :alt="m.scenePlaceName ? `Scene: ${m.scenePlaceName}` : 'Place scene'"
+                        loading="eager"
+                        decoding="async"
+                      >
+                    </div>
+                  </div>
+                  <div class="narrator-msg-text-col">
+                    <span
+                      v-if="m.streaming && !m.text"
+                      class="typing-dots"
+                      aria-hidden="true"
+                    >
+                      <span class="typing-dots__dot" />
+                      <span class="typing-dots__dot" />
+                      <span class="typing-dots__dot" />
+                    </span>
+                    <div
+                      v-else-if="m.text"
+                      class="chat-msg-html"
+                      v-html="formatChatHtml(m.text)"
+                    />
+                  </div>
+                </div>
               </q-chat-message>
             </template>
           </div>
@@ -395,6 +437,68 @@ function send() {
 .retro-chat-msg--user :deep(.q-message-text--sent) {
   background: rgba(4, 18, 12, 0.9) !important;
   border-color: rgba(0, 255, 156, 0.22);
+}
+
+.narrator-msg-body {
+  width: 100%;
+}
+
+.narrator-msg-text-col {
+  min-width: 0;
+}
+
+.narrator-msg-body--with-scene {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.narrator-msg-body--with-scene .narrator-msg-scene-col {
+  width: 100%;
+  max-width: 420px;
+  align-self: center;
+}
+
+@media (min-width: 600px) {
+  .narrator-msg-body--with-scene {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .narrator-msg-body--with-scene .narrator-msg-scene-col {
+    flex: 0 0 auto;
+    width: auto;
+    max-width: min(300px, 42%);
+    align-self: flex-start;
+  }
+
+  .narrator-msg-body--with-scene .narrator-msg-text-col {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.narrator-msg-scene-col .scene-image-wrap {
+  max-width: 100%;
+  margin-bottom: 0;
+}
+
+.scene-image-wrap {
+  margin-bottom: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  max-width: min(100%, 520px);
+}
+
+.scene-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  image-rendering: auto;
+  border-radius: 1px;
 }
 
 .retro-chat-msg :deep(.q-message-container) {
