@@ -3,9 +3,9 @@
   "intro": "Você é um ladrão e dos bons. Sua especialidade é roubar os ricos — \"Não por uma questão de nobreza\", como costuma dizer, \"é que os pobres não têm nada para se roubar!\"\n\nEsta noite você está rondando uma parte da cidade particularmente rica. Você não vem aqui com freqüência; a entrada do bairro é muito bem vigiada. A grande chance surgiu esta noite, quando o vigia achou a garrafa de uísque que você deixou para ele. Você entrou furtivamente assim que ele adormeceu.\n\nA noite está esplêndida para um ladrão; a lua brilha quase tão intensamente quanto o sol. Você examina as janelas, enquanto desliza entre as sombras, e logo descobre uma que não está trancada. Enfia a lâmina de seu punhal no vão e levanta a aldrava.",
   "player_characteristics": "João, um jovem ladrão de 25 anos, vive de pequenos furtos e oportunidades rápidas. Homem de natureza simples, é analfabeto e não se destaca pela inteligência, mas compensa isso com certa esperteza prática nas ruas. Tem habilidades em furtividade e luta, usando um punhal como principal arma, além de carregar sempre uma sacola e uma toalha. Glutão, dificilmente resiste a comida fácil, o que às vezes o coloca em situações complicadas.",
   "narrator_opening_note": "Mantém coerência com a intro: entrada pela janela até o lugar inicial do mapa.",
-  "places": [
+  "regions": [
     {
-      "place_name": "Casa do Fatso",
+      "region_name": "Casa do Fatso",
       "description": "Casa árabe.",
       "events": ["Furtividade, o Vigia pode acordar! Ele irá tentar expulsar o ladrão e lutar. Provavelmente matará a menos que necesário para se defender ou ao Fatso."],
       "npcs": [
@@ -20,9 +20,9 @@
           "description": "Velho, agiota, rico e paranóico."
         }
       ],
-      "rooms": [
+      "locations": [
         {
-          "room_name": "Cozinha",
+          "location_name": "Cozinha",
           "description": "Faca, guisado, 2 cadeiras, água, vela castiçal. Chão e paredes pedra polida, levemente irregular.",
           "connections": [
             {"to": "Vestíbulo", "how": "porta norte" },
@@ -31,7 +31,7 @@
           ]
         },
         {
-          "room_name": "Vestíbulo",
+          "location_name": "Vestíbulo",
           "description": "Hall com pé direito duplo, vitral do lado sul bem no alto. Luz da lua entrando. Dá acesso a várias partes da casa.",
           "connections": [
             {"to": "Quarto do Fatso", "how": "uma escadaria subindo, começa a oeste, virando para o norte encostada na parte. Há uma corrimão de madeira e um pequeno mezanino que dá pra porta, no topo. A porta é ricamente ornada com um relevo de madeira." },
@@ -41,8 +41,8 @@
           ]
         },
         {
-          "room_name": "São Principal",
-          "description": "Pé direito duplo, tapetes, sofá almofadas, 4 estátuas, tapeçarias, narguilés, arabesco no chão.",
+          "location_name": "São Principal",
+          "description": "Bastante rico.Pé direito duplo, tapetes, sofá almofadas, 4 estátuas, tapeçarias, narguilés, arabesco no chão.",
           "connections": [
             {"to": "Vestíbulo", "how": "passagem a sudoeste" },
             {"to": "Quarto do Max", "how": "porta simples, noroeste" },
@@ -51,7 +51,7 @@
           ]
         },
         {
-          "room_name": "São Principal",
+          "location_name": "São Principal",
           "description": "Pé direito duplo, tapetes, sofá almofadas, 4 estátuas, tapeçarias, narguilés, arabesco no chão.",
           "connections": [
             {"to": "Vestíbulo", "how": "passagem a sudoeste" },
@@ -61,7 +61,7 @@
           ]
         },
         {
-          "room_name": "Pátio interno",
+          "location_name": "Pátio interno",
           "description": "Arborizado. Um caminho de pedras ligando a porta para a rua até o salão principal.",
           "connections": [
             {"to": "Salão Principal", "how": "porta grande ornada com um relevo de madeira a noroeste" },
@@ -70,7 +70,16 @@
           ]
         },
         {
-          "room_name": "Despensa",
+          "location_name": "Chafariz",
+          "description": "Chafariz com água corrente, arabescos.",
+          "connections": [
+            {"to": "Cozinha", "how": "janela à oeste" },
+            {"to": "Salão Principal",  "how": "treliça de madeira vazada ao norte" },
+            {"to": "Pátio interno",  "how": "passagem livre a leste" }
+          ]
+        },        
+        {
+          "location_name": "Despensa",
           "description": "Prateleiras, armários, barris. Muito escuro. Sem janela",
           "connections": [
             {"to": "Vestíbulo", "how": "porta a leste" },
@@ -78,14 +87,14 @@
           ]
         },
         {
-          "room_name": "Porão",
+          "location_name": "Porão",
           "description": "Caixas, garrafas, estáticas, ainda mais escuro!",
           "connections": [
             {"to": "Despensa", "how": "subindo pela escada, saindo do alçapão" }
           ]
         },
         {
-          "room_name": "Quarto do Fatso",
+          "location_name": "Quarto do Fatso",
           "description": "Estatuetas, armário roupas, arte, sineta",
           "connections": [
             {"to": "Vestíbulo", "how": "porta sul" },
@@ -95,7 +104,7 @@
         }
         ,
         {
-          "room_name": "Quarto do Max",
+          "location_name": "Quarto do Max",
           "description": "Simples, uma esteira, uma cimitarra e um baú",
           "connections": [
             {"to": "São Principal", "how": "porta leste, com uma treliça de madeira vazada para luz e ventilação acima da porta." },
