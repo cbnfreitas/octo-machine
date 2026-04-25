@@ -7,6 +7,7 @@ from __future__ import annotations
 from app.game_clock import format_game_clock_for_prompt
 from app.internal_acrobatics import fatigue_label_for_context
 from app.participants import Participant
+from tools.move import get_player_narrative_filters
 
 # Headers tie each block to a diagram participant; content is Portuguese for the narrator LLM.
 SECTION_PLAYER_INTENT = f"### PLAYER_INTENT ({Participant.PLAYER.value} → narrador)"
@@ -41,6 +42,14 @@ def format_engine_context_for_prompt(
         facts_block = scene_facts_sheet.strip()
     else:
         facts_block = "(ainda sem fichas; use só mapa, narração anterior e intenção do jogador.)"
+    filters = get_player_narrative_filters()
+    if filters:
+        filters_lines = "\n".join(f"  - {item}" for item in filters)
+        filters_block = (
+            f"\n- **Filtros de narração do personagem (mapa; obrigatório neste turno):**\n{filters_lines}"
+        )
+    else:
+        filters_block = ""
     return (
         f"{SECTION_ENGINE_CONTEXT}\n"
         "- Fadiga interna (acrobacia), só qualitativa: "
@@ -57,6 +66,7 @@ def format_engine_context_for_prompt(
         f"- **Itens no saco (stash) do jogador:** {stash_line}\n"
         "- **Fichas de cena (fatos físicos fixados pelo motor):**\n"
         f"{facts_block}"
+        f"{filters_block}"
     )
 
 

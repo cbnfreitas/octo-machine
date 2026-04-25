@@ -79,6 +79,19 @@ def _raw_game_document() -> dict[str, Any]:
         return json.load(f)
 
 
+@lru_cache(maxsize=1)
+def get_player_narrative_filters() -> tuple[str, ...]:
+    raw = _raw_game_document().get("player_narrative_filters")
+    if not isinstance(raw, list):
+        return ()
+    out: list[str] = []
+    for item in raw:
+        s = str(item).strip() if item is not None else ""
+        if s:
+            out.append(s)
+    return tuple(out)
+
+
 def _place_index() -> dict[str, dict[str, Any]]:
     data = _raw_game_document()
     raw_regions = data.get("regions")
