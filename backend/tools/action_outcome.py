@@ -69,7 +69,9 @@ TOOL_SYSTEM_INSTRUCTION = (
     "(texto livre: o que está a ser tentado; reservado para regras futuras) e **`difficulty`** entre "
     "`muito_facil`, `facil`, `medio`, `dificil`, `muito_dificil` - alinhado ao **risco real** na cena "
     "(mortal/giro completo: pelo menos `medio`, nunca `facil`). O sorteio usa d100 (1-100); 1% sucesso "
-    "crítico, 1% falha crítica; o meio segue a tabela do nível. Integre o resultado na narração."
+    "crítico, 1% falha crítica; o meio segue a tabela do nível. Em testes de percepção/investigação: "
+    "`facil` só para ação muito específica no ponto certo; `medio` para busca focada com incerteza; "
+    "`dificil`/`muito_dificil` para pistas sutis em baixa luz/pressão/obstrução. Integre o resultado na narração."
 )
 
 _DIFFICULTY_ENUM = list(_DIFFICULTY_ORDER)

@@ -23,7 +23,7 @@
       "locations": [
         {
           "location_name": "Cozinha",
-          "description": "Utensílios de cozinha de boa qualidade, guisado no forno que ainda tem brasas acessas, 2 cadeiras, vela apagada sobre um castiçal. Chão e paredes pedra polida, levemente irregular.",
+          "description": "Utensílios de cozinha de boa qualidade, guisado no forno que ainda tem brasas acessas, uma mesa, 2 cadeiras e vela apagada sobre um castiçal. Chão e paredes pedra polida, levemente irregular. Segredo médio: embaixo da mesa há uma espada escondida.",
           "connections": [
             {"to": "Vestíbulo", "how": "porta norte" },
             {"to": "Chafariz", "how": "pequena janela leste, sem passagem" },
@@ -37,13 +37,13 @@
             {"to": "Quarto do Fatso", "how": "uma escadaria subindo, começa a oeste, virando para o norte encostada na parte. Há uma corrimão de madeira e um pequeno mezanino que dá pra porta, no topo. A porta é ricamente ornada com um relevo de madeira." },
             {"to": "Despensa", "how": "porta simples menor, a sudoeste" },
             {"to": "São Principal",  "how": "passagem a leste" },
-            {"to": "Quarto do Max",  "how": "pequena abertura para ventilação, um pouco abaixo do nível do mezanino, quase imperceptível - segredo (não revelar diretamente ao jogador; em geral requer teste de percepção via action_outcome ou descrição muito precisa da ação do jogador)" },
+            {"to": "Quarto do Max",  "how": "Segredo difícil: pequena abertura para ventilação, um pouco abaixo do nível do mezanino, quase imperceptível" },
             {"to": "Cozinha",  "how": "porta ao sul" }
           ]
         },
         {
           "location_name": "São Principal",
-          "description": "Bastante rico.Pé direito duplo, tapetes, sofá almofadas, 4 estátuas, tapeçarias, narguilés, arabesco no chão.",
+          "description": "Bastante rico. Pé direito duplo, tapetes, sofá almofadas, 4 estátuas, tapeçarias, narguilés, arabesco no chão.",
           "connections": [
             {"to": "Vestíbulo", "how": "passagem a sudoeste" },
             {"to": "Quarto do Max", "how": "porta simples, noroeste" },
@@ -84,12 +84,12 @@
           "description": "Prateleiras, armários, barris. Muito escuro. Sem janela",
           "connections": [
             {"to": "Vestíbulo", "how": "porta a leste" },
-            {"to": "Porão",  "how": "alçapão no assoalho, escondido abaixo de um barril. Escada que desce." }
+            {"to": "Porão",  "how": "Segredo médio (fácil com luz) alçapão no assoalho, escondido abaixo de um barril. Escada que desce." }
           ]
         },
         {
           "location_name": "Porão",
-          "description": "Caixas, garrafas, estáticas, ainda mais escuro!",
+          "description": "Caixas, barris, garrafas, estáticas, ainda mais escuro! Segredo difícil (médio com luz): em um dois barris, há uma fechadura, parece um cofre disfarçado. Ação média (fácil com luz): é possível arrombar a fechadura: há bolsa com joias dentro do barril!",
           "connections": [
             {"to": "Despensa", "how": "subindo pela escada, saindo do alçapão" }
           ]
