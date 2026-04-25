@@ -34,7 +34,7 @@
         {
           "location_name": "Vestíbulo",
           "description": "Um espaço circular silencioso, banhado pela luz da lua que entra por um vitral alto. Uma escada curva domina o ambiente.",
-          "details": "A escada começa a oeste e curva-se para o norte até um pequeno mezanino com porta ornamentada. O espaço ecoa levemente. Segredo difícil: pequena abertura de ventilação quase invisível leva ao quarto do Max.",
+          "details": "A escada começa a oeste e curva-se para o norte até um pequeno mezanino com porta ornamentada. O espaço ecoa levemente. Segredo difícil: pequena abertura de ventilação quase invisível, permite ao Max ouvir os barulhos no vestíbulo.",
           "connections": [
             {"to": "Quarto do Fatso", "how": "escadaria curva"},
             {"to": "Despensa", "how": "porta sudoeste"},
