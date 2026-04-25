@@ -8,6 +8,8 @@ from typing import Any
 
 from openai.types.chat import ChatCompletionToolUnionParam
 
+from app.game_clock import parse_initial_game_time
+
 from .invoke import invoke_tool
 
 _GAME_MAP_JSON = Path(__file__).resolve().parent.parent / "app" / "game" / "uma_noite_de_trabalho.json"
@@ -83,6 +85,11 @@ def get_narrator_opening_note() -> str:
     if not isinstance(raw, str):
         return ""
     return raw.strip()
+
+
+def get_initial_game_clock_minutes() -> float:
+    raw = _raw_game_document().get("initial_game_time")
+    return parse_initial_game_time(raw)
 
 
 def _format_connection_line(connections: list[str]) -> str:

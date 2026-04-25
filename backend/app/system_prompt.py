@@ -28,7 +28,7 @@ def fallback_opening_message() -> str:
     )
 
 
-def opening_turn_user_content(*, fatigue_percent: float = 0.0) -> str:
+def opening_turn_user_content(*, fatigue_percent: float = 0.0, game_clock_minutes: float = 0.0) -> str:
     intro = get_game_intro()
     start = move_to_place(STARTING_PLACE_NAME)
     summary = str(start["player_facing_summary"])
@@ -61,16 +61,20 @@ def opening_turn_user_content(*, fatigue_percent: float = 0.0) -> str:
         f"{intro_block}\n\n"
         "### Move — lugar inicial — matéria-prima\n\n"
         f"{summary}\n\n"
-        f"{format_engine_context_for_prompt(fatigue_percent)}\n"
+        f"{format_engine_context_for_prompt(fatigue_percent=fatigue_percent, game_clock_minutes=game_clock_minutes)}\n"
     )
 
 
 def _acrobatics_fatigue_section() -> str:
     return (
-        "## Acrobacia e fadiga interna\n\n"
+        "## Acrobacia, fadiga e tempo in-game\n\n"
         "O bloco **ENGINE_CONTEXT** traz **fadiga interna (acrobacia)** só como **frase qualitativa** "
         "(sem números). Isso mede cansaço físico acumulado para **modular** a ficção; **não** trate como "
         "dado que o personagem lê como estatística nem diga «fadiga interna» de forma meta.\n\n"
+        "O mesmo bloco traz **tempo in-game estimado** (relógio 24h) como **âncora** para quanto a noite "
+        "ou a cena **já avançou** na ficção: use para manter **coerência** (silêncio da casa, cansaço "
+        "social, pressa até o amanhecer, etc.), **sem** forçar o horário em cada frase e **sem** "
+        "meta-referência ao «motor» ou «estimativa».\n\n"
         "Quando o jogador tentar **manobra acrobática** (salto, equilíbrio arriscado, queda controlada, "
         "escalar trecho exposto, etc.), na **primeira narração dessa tentativa nesta jogada**, inclua na "
         "prosa a **dificuldade percebida** pelo corpo — escala aproximada: "

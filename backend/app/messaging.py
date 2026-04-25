@@ -4,6 +4,7 @@ Compose LLM-facing user turns: parallel Player intent + Engine context (sync), p
 
 from __future__ import annotations
 
+from app.game_clock import format_game_clock_for_prompt
 from app.internal_acrobatics import fatigue_label_for_context
 from app.participants import Participant
 
@@ -12,17 +13,26 @@ SECTION_PLAYER_INTENT = f"### PLAYER_INTENT ({Participant.PLAYER.value} → narr
 SECTION_ENGINE_CONTEXT = f"### ENGINE_CONTEXT ({Participant.ENGINE_TOOLS.value} → narrador, sync)"
 
 
-def format_engine_context_for_prompt(fatigue_percent: float) -> str:
+def format_engine_context_for_prompt(*, fatigue_percent: float, game_clock_minutes: float) -> str:
     label = fatigue_label_for_context(fatigue_percent)
+    clock = format_game_clock_for_prompt(game_clock_minutes)
     return (
         f"{SECTION_ENGINE_CONTEXT}\n"
         "- Fadiga interna (acrobacia), só qualitativa: "
         f"{label} "
-        "(sem números; não é dado que o personagem leia como estatística.)"
+        "(sem números; não é dado que o personagem leia como estatística.)\n"
+        "- Tempo in-game (estimativa do motor), relógio 24h: "
+        f"**{clock}** — âncora para passagem de tempo na ficção; não exponha como interface nem "
+        "leia o horário em voz alta de forma meta, salvo se a cena tiver um relógio ou alguém "
+        "perguntar as horas."
     )
 
 
-def build_turn_user_content(player_intent: str, *, fatigue_percent: float) -> str:
+def build_turn_user_content(
+    player_intent: str, *, fatigue_percent: float, game_clock_minutes: float
+) -> str:
     intent = player_intent.strip()
-    ctx = format_engine_context_for_prompt(fatigue_percent)
+    ctx = format_engine_context_for_prompt(
+        fatigue_percent=fatigue_percent, game_clock_minutes=game_clock_minutes
+    )
     return f"{SECTION_PLAYER_INTENT}\n{intent}\n\n{ctx}"

@@ -25,6 +25,7 @@ from app.system_prompt import (
     opening_turn_user_content,
 )
 from tools import TOOLS, run_tool
+from tools.move import get_initial_game_clock_minutes
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(REPO_ROOT / ".env")
@@ -175,12 +176,15 @@ async def chat(ws: WebSocket):
         return
 
     client = OpenAI(api_key=API_KEY)
-    session_state = GameSessionState()
+    session_state = GameSessionState(initial_game_clock_minutes=get_initial_game_clock_minutes())
     messages: list[ChatCompletionMessageParam] = [
         {"role": "system", "content": chat_system_content()},
         {
             "role": "user",
-            "content": opening_turn_user_content(fatigue_percent=session_state.fatigue_percent),
+            "content": opening_turn_user_content(
+                fatigue_percent=session_state.fatigue_percent,
+                game_clock_minutes=session_state.game_clock_minutes,
+            ),
         },
     ]
     await ws.send_json({"type": "opening_start"})
@@ -238,10 +242,15 @@ async def chat(ws: WebSocket):
             turn_start = len(messages)
             async with session_state.lock:
                 fatigue_now = session_state.fatigue_percent
+                clock_now = session_state.game_clock_minutes
             messages.append(
                 {
                     "role": "user",
-                    "content": build_turn_user_content(content, fatigue_percent=fatigue_now),
+                    "content": build_turn_user_content(
+                        content,
+                        fatigue_percent=fatigue_now,
+                        game_clock_minutes=clock_now,
+                    ),
                 }
             )
 

@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import asyncio
 
+from app.game_clock import normalize_clock_minutes
+
 
 class GameSessionState:
-    __slots__ = ("fatigue_percent", "_lock")
+    __slots__ = ("fatigue_percent", "game_clock_minutes", "_lock")
 
-    def __init__(self) -> None:
+    def __init__(self, *, initial_game_clock_minutes: float = 0.0) -> None:
         self.fatigue_percent = 0.0
+        self.game_clock_minutes = normalize_clock_minutes(initial_game_clock_minutes)
         self._lock = asyncio.Lock()
 
     @property
