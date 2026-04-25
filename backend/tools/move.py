@@ -21,7 +21,9 @@ STARTING_PLACE_NAME = "Cozinha"
 def _tool_system_instruction() -> str:
     base = (
         "Quando o jogador **mudar de lugar** ou **ir para outro cômodo**, chame `move` com "
-        "`place_name` **exatamente** como no mapa (ex.: \"Cozinha\", \"Salão Principal\", \"Despensa\"). "
+        "`place_name` no **nome canônico** do mapa (como nas chaves de local do ficheiro JSON). "
+        "Quem interpreta a fala natural do jogador e escolhe o destino correto é **você**; a tool só "
+        "recebe o nome já resolvido. "
         "A saída traz `description` e `player_facing_summary` **já filtrados** (sem blocos de "
         "segredo/armadilha do arquivo bruto); use isso como base ao chegar. O campo `description_full` "
         "é o texto integral do mapa—**só** use trechos ocultos quando o jogador **tiver explorado "
@@ -56,7 +58,8 @@ TOOL: ChatCompletionToolUnionParam = {
                 "place_name": {
                     "type": "string",
                     "description": (
-                        "Nome **exatamente** como no mapa (copie das conexões de `move` quando possível). "
+                        "Nome **canônico** do lugar no mapa (o que você inferiu a partir da intenção do jogador). "
+                        "Deve coincidir com um `location_name` / destino `to` válido. "
                         "Use UTF-8 real: **não** use escapes Unicode no meio do nome (ex.: o trecho \"ão\" em "
                         "\"Porão\", não um caractere nulo)."
                     ),
@@ -294,7 +297,8 @@ def _resolve_place_name(raw: str, index: dict[str, dict[str, Any]]) -> str | Non
     if not s:
         return None
 
-    variants = [s, _repair_common_model_corruptions(s)]
+    collapsed = re.sub(r"[\s\-–—]+", " ", s).strip()
+    variants = [s, collapsed, _repair_common_model_corruptions(s)]
     for candidate in variants:
         if candidate in index:
             return candidate
@@ -359,6 +363,7 @@ def move_to_place(
         str(c["how"])
         for c in connections
         if not bool(c.get("destination_hidden_until_discovery", False))
+        and bool(c.get("seems_traversable_now", False))
     ]
     connection_line = _format_connection_line(public_connection_hows)
     player_facing_summary = f"{description}\n\n{connection_line}"

@@ -245,7 +245,7 @@ async def chat(ws: WebSocket):
     await ws.send_json({"type": "opening_start"})
 
     opening_text = ""
-    forwarded = 0
+    opening_forwarded_tokens = 0
     try:
         try:
             round_num = 0
@@ -253,7 +253,7 @@ async def chat(ws: WebSocket):
                 round_num += 1
                 if round_num > MAX_TOOL_ROUNDS:
                     raise RuntimeError("Tool loop limit reached in opening turn")
-                opening_text, has_tools, typed_calls, _, pending_token_chunks = (
+                opening_text, has_tools, typed_calls, round_forwarded, pending_token_chunks = (
                     await _stream_model_round(
                         client,
                         ws,
@@ -261,6 +261,7 @@ async def chat(ws: WebSocket):
                         buffer_tokens_until_tool_round_complete=True,
                     )
                 )
+                opening_forwarded_tokens += round_forwarded
                 if has_tools:
                     opening_asst_msg: ChatCompletionAssistantMessageParam = {
                         "role": "assistant",
@@ -301,7 +302,7 @@ async def chat(ws: WebSocket):
             opening_text = ""
         if not opening_text:
             opening_text = fallback_opening_message().strip()
-        if forwarded == 0 and opening_text:
+        if opening_forwarded_tokens == 0 and opening_text:
             await ws.send_json({"type": "token", "text": opening_text})
     finally:
         await ws.send_json({"type": "opening_done"})

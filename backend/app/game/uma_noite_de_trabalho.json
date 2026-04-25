@@ -26,8 +26,8 @@
           "description": "Faca, guisado, 2 cadeiras, água, vela castiçal. Chão e paredes pedra polida, levemente irregular.",
           "connections": [
             {"to": "Vestíbulo", "how": "porta norte" },
-            {"to": "Chafariz", "how": "janela leste" },
-            {"to": "Rua",  "how": "janela sul" }
+            {"to": "Chafariz", "how": "janela leste, não tem como passar, só descrever a vista" },
+            {"to": "Rua",  "how": "janela sul, de onde o jogador entrou" }
           ]
         },
         {
@@ -64,7 +64,7 @@
           "location_name": "Pátio interno",
           "description": "Arborizado. Um caminho de pedras ligando a porta para a rua até o salão principal.",
           "connections": [
-            {"to": "Salão Principal", "how": "porta grande ornada com um relevo de madeira a noroeste" },
+            {"to": "São Principal", "how": "porta grande ornada com um relevo de madeira a noroeste" },
             {"to": "Chafariz",  "how": "sem portas ou barreiras, conexão a sudoeste" },
             {"to": "Rua",  "how": "porta ao sul" }
           ]
@@ -74,7 +74,7 @@
           "description": "Chafariz com água corrente, arabescos.",
           "connections": [
             {"to": "Cozinha", "how": "janela à oeste" },
-            {"to": "Salão Principal",  "how": "treliça de madeira vazada ao norte" },
+            {"to": "São Principal",  "how": "treliça de madeira vazada ao norte" },
             {"to": "Pátio interno",  "how": "passagem livre a leste" }
           ]
         },        
