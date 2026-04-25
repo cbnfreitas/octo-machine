@@ -1,4 +1,4 @@
-from app.messaging import format_engine_context_for_prompt
+from app.messaging import build_turn_user_content
 from app.feature_flags import scene_images_enabled
 from tools import combined_tool_instructions
 from tools.move import (
@@ -31,8 +31,6 @@ def fallback_opening_message() -> str:
 
 def opening_turn_user_content(*, fatigue_percent: float = 0.0, game_clock_minutes: float = 0.0) -> str:
     intro = get_game_intro()
-    start = move_to_place(STARTING_PLACE_NAME)
-    summary = str(start["player_facing_summary"])
     note_block = ""
     n = get_narrator_opening_note()
     if n.strip():
@@ -42,27 +40,23 @@ def opening_turn_user_content(*, fatigue_percent: float = 0.0, game_clock_minute
         if intro.strip()
         else "(Sem campo `intro` no mapa — abre só com a chegada ao lugar inicial.)"
     )
+    turn = build_turn_user_content(
+        "Vamos começar",
+        fatigue_percent=fatigue_percent,
+        game_clock_minutes=game_clock_minutes,
+        current_place_name=None,
+        known_place_names=(),
+    )
     return (
+        f"{turn}\n\n"
         "### Instrução (início de sessão)\n\n"
-        "Escreva a **abertura** ao jogador: **uma** mensagem contínua, em **português do Brasil**, "
-        "segunda pessoa. Siga **todas** as regras do system prompt — **descrição em camadas** (impressão "
-        "geral primeiro, sem inventariar tudo); **negrito** só em **um ou outro** ponto de maior peso; "
-        "**não** revele segredos; **não** menus nem prescrição de ações; **inclua ganchos espaciais** "
-        "(portas, vãos, rumos que ligam a outros espaços) com base nas **conexões** do Move, em prosa, "
-        "sem lista técnica; um pouco de **carga dramática** se couber ao tom. **POV**: só percepção e "
-        "inferência do momento; sem «não há tesouro/valor» como fato do mapa; nomes de espaços na prosa "
-        "em forma natural (minúsculas quando couber). Respeite **Economia de detalhe**: o bloco que "
-        f"**ancora** o lugar inicial depois que você situar o contexto **≤~{NARRATION_INITIAL_MAX_CHARS}** "
-        "caracteres; mantenha a abertura global **enxuta**.\n\n"
-        "Integre o arco de **### Intro** com o momento em que o jogador **acaba de entrar** no lugar "
-        f"inicial (**{STARTING_PLACE_NAME}**), usando apenas **### Move** como base factual — **não** "
-        "copie parágrafos de apoio palavra a palavra.\n\n"
+        "Esta é a primeira jogada real da sessão. Antes de narrar a abertura ao jogador, chame "
+        f"`move` para o lugar inicial **{STARTING_PLACE_NAME}** e use o resultado como base factual "
+        "da cena. Escreva uma única mensagem de abertura, em PT-BR, obedecendo POV, segredo e economia "
+        "de detalhe do system prompt.\n\n"
         f"{note_block}"
         "### Intro (matéria-prima)\n\n"
-        f"{intro_block}\n\n"
-        "### Move — lugar inicial — matéria-prima\n\n"
-        f"{summary}\n\n"
-        f"{format_engine_context_for_prompt(fatigue_percent=fatigue_percent, game_clock_minutes=game_clock_minutes)}\n"
+        f"{intro_block}\n"
     )
 
 
@@ -75,7 +69,9 @@ def _acrobatics_fatigue_section() -> str:
         "O mesmo bloco traz **tempo in-game estimado** (relógio 24h) como **âncora** para quanto a noite "
         "ou a cena **já avançou** na ficção: use para manter **coerência** (silêncio da casa, cansaço "
         "social, pressa até o amanhecer, etc.), **sem** forçar o horário em cada frase e **sem** "
-        "meta-referência ao «motor» ou «estimativa».\n\n"
+        "meta-referência ao «motor» ou «estimativa». O bloco também lista **lugar atual** e **nomes do "
+        "mapa já visitados**; isso amarra **conhecimento do personagem** à exploração (ver **Ponto de vista**)."
+        "\n\n"
         "Quando o jogador tentar **manobra acrobática** (salto, equilíbrio arriscado, queda controlada, "
         "escalar trecho exposto, etc.), na **primeira narração dessa tentativa nesta jogada**, inclua na "
         "prosa a **dificuldade percebida** pelo corpo — escala aproximada: "
@@ -91,11 +87,10 @@ def _opening_contract_for_narrator() -> str:
     parts = [
         "O arquivo de mapa do jogo é **%s**." % GAME_MAP_BASENAME,
         (
-            "A **primeira** mensagem do assistente deve **narrar** a abertura: integre a **`intro`** "
-            "(se existir) com o material equivalente a **`move`** no lugar inicial **%s**, obedecendo "
-            "a todas as regras (negrito, segredos, sem dicas). A mensagem de usuário de arranque "
-            "traz dados em bruto — **são rascunho**, não texto para colar literalmente nem listar "
-            "ligações como inventário." % STARTING_PLACE_NAME
+            "A **primeira** mensagem do assistente deve **narrar** a abertura após chamar `move` para "
+            "o lugar inicial **%s** nesta própria jogada inicial. Integre a **`intro`** (se existir) "
+            "com o retorno desse `move`, obedecendo a todas as regras (negrito, segredos, sem dicas)."
+            % STARTING_PLACE_NAME
         ),
     ]
     note = get_narrator_opening_note()
@@ -152,10 +147,19 @@ def _rpg_sections() -> str:
         "Use **`move`** quando o jogador **for para outro lugar** do mapa (não para o lugar inicial "
         f"**{STARTING_PLACE_NAME}** enquanto ele não tiver saído dele): passe o `place_name` exato do "
         "mapa; ao narrar a chegada, baseie-se em `description` / `player_facing_summary` **e** nas "
-        "**conexões** (saídas, portas, vãos, corredores que daí se adivinham)—integre-as na ficção como "
-        "**âncoras espaciais**, não como lista técnica. Ao voltar texto do mapa em narração, **filtre** "
+        "**conexões** retornadas (objetos com `to`, `how` e sinalizadores de passagem). Em prosa, priorize o "
+        "que é perceptível por `how` (porta, janela, vão, escada, treliça, etc.) como **âncoras "
+        "espaciais**; não transforme em lista técnica. Trate `to` como referência de motor, não como "
+        "fala obrigatória ao jogador: se o acesso parecer oculto/segredo ou não diretamente visível, "
+        "não revele o destino nominal antes de exploração pertinente. Se a conexão sugerir obstáculo "
+        "(ex.: `seems_traversable_now=false`, treliça sem passagem, janela difícil), descreva a limitação "
+        "e **não valide deslocamento automático** sem ação adequada. Ao voltar texto do mapa em narração, **filtre** "
         "julgamentos de tesouro/valor ou ausências categóricas para a **voz do personagem** (ver "
-        f"**Ponto de vista**). Use `description_full` só para fundamentar o que for revelado depois. {scene_image_note}\n\n"
+        f"**Ponto de vista**). Use `description_full` só para fundamentar o que for revelado depois. "
+        "Se o JSON trouxer **`revisit`: true**, o jogador **voltou** a um lugar já visitado: **não** "
+        "repita a descrição completa; duas ou três frases bastam (sensação de retorno, um detalhe que "
+        "mudou ou que salta agora), salvo o jogador pedir mais.\n\n"
+        f"{scene_image_note}\n\n"
         "Use **`action_outcome`** quando uma ação do jogador precise de sorte (teste, disputa, risco, "
         "oposição, **acrobacia ou esforço físico incerto**): envie **`skill`** (texto livre que descreve a "
         "manobra) e **`difficulty`** (`muito_facil`, `facil`, `medio`, `dificil`, `muito_dificil`) coerente "
@@ -210,16 +214,28 @@ def _rpg_sections() -> str:
         "definitivas do texto de apoio como se fossem verdades medidas (ex.: evita «não há tesouros "
         "principais aqui»); o jogador **não** revistou tudo—pode haver algo escondido. Preferências: "
         "**«Ao que parece…»**, **«nada que salte à vista»**, **«nada óbvio de grande valor»**, "
-        "**«poderia passar despercebido…»**.\n\n"
+        "**«poderia passar despercebido…»**. Para conexões, descreva primeiro o meio de acesso percebido "
+        "(porta, janela, vão, escada, alçapão visível); só nomeie o cômodo de destino quando isso fizer "
+        "sentido no POV atual ou já tiver sido descoberto em jogo.\n\n"
+        "**Lugares que o personagem «conhece» pelo nome do mapa:** use a lista **Nomes do mapa que o "
+        "jogador já visitou** do **ENGINE_CONTEXT**. Se a **PLAYER_INTENT** citar um destino pelo nome "
+        "canônico **fora** dessa lista (ex.: «vou para a Despensa» sem nunca ter estado lá), **não** "
+        "trate como intenção válida em metajogo: responda em ficção — o personagem **não** saberia esse "
+        "nome ainda; peça **indicação espacial** (qual porta, qual rumo, o que ele quer fazer com o que "
+        "**vê**). Você ainda pode registrar deslocamento com `move` quando a ação ficar clara e **adjacente**.\n\n"
         "**Nomes de lugares na ficção:** integre-os na prosa com **capitalização normal** em frase "
         "(«a cozinha», «a sala principal», «um vão para a despensa»). **Evite** repetir os `place_name` "
         "do arquivo como títulos em destaque («Sala Principal», «Despensa») salvo ênfase pontual; "
         "nas **chamadas à tool** `move` continue usando o nome **exato** do mapa.\n\n"
         "## Formatação\n\n"
-        "**Negrito** com **moderação**: reserve-o a **poucos** alvos por trecho—o que tiver **maior "
-        "peso narrativo** (um objeto-chave, um nome de lugar que muda o jogo, um perigo imediato). "
-        "**Não** coloque tudo em negrito nem cada nome próprio; a maior parte do texto fica em "
-        "prosa fluida."
+        "Use **negrito** só no que o jogador **pode agir** ou **precisa notar na hora**: objetos importantes, "
+        "**saídas**, **ameaças**, **personagens** e **âncoras espaciais** fortes (incluindo nome de cômodo ou "
+        "ligação relevante). Use também para **mudanças** que importam: som novo, movimento, consequência "
+        "clara de uma ação.\n\n"
+        "Evite negrito em **atmosfera pura** ou descrição decorativa. Se você removesse todo o texto normal, "
+        "as palavras em negrito deveriam ser sobretudo o que é **interativo ou urgente** (sem revelar segredo "
+        "antes da hora).\n\n"
+        "Na prática, **poucos** negritos por resposta; a maior parte em prosa fluida."
     )
 
 

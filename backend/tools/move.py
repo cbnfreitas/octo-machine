@@ -21,11 +21,13 @@ STARTING_PLACE_NAME = "Cozinha"
 def _tool_system_instruction() -> str:
     base = (
         "Quando o jogador **mudar de lugar** ou **ir para outro cômodo**, chame `move` com "
-        "`place_name` **exatamente** como no mapa (ex.: \"Cozinha\", \"Salão\", \"Despensa\"). "
+        "`place_name` **exatamente** como no mapa (ex.: \"Cozinha\", \"Salão Principal\", \"Despensa\"). "
         "A saída traz `description` e `player_facing_summary` **já filtrados** (sem blocos de "
         "segredo/armadilha do arquivo bruto); use isso como base ao chegar. O campo `description_full` "
         "é o texto integral do mapa—**só** use trechos ocultos quando o jogador **tiver explorado "
-        "de forma pertinente**; nunca copie `description_full` inteiro de uma vez para o jogador."
+        "de forma pertinente**; nunca copie `description_full` inteiro de uma vez para o jogador. "
+        "`connections` é uma lista de objetos com `to`, `how` e sinalizadores de passagem; use `how` "
+        "como base perceptiva (ver regras de POV no system prompt)."
     )
     if scene_images_enabled():
         return (
@@ -74,16 +76,41 @@ def _raw_game_document() -> dict[str, Any]:
 
 def _place_index() -> dict[str, dict[str, Any]]:
     data = _raw_game_document()
-    raw_places = data["places"]
-    if not isinstance(raw_places, list):
-        raise TypeError("game map JSON: 'places' must be a list")
+    raw_regions = data.get("regions")
+    raw_places = data.get("places")
+    containers: list[dict[str, Any]] = []
+
+    if isinstance(raw_regions, list):
+        containers.extend(item for item in raw_regions if isinstance(item, dict))
+    if isinstance(raw_places, list):
+        containers.extend(item for item in raw_places if isinstance(item, dict))
+    if not containers:
+        raise TypeError("game map JSON: expected 'regions' or 'places' as a list")
+
     index: dict[str, dict[str, Any]] = {}
-    for item in raw_places:
-        if not isinstance(item, dict):
-            continue
-        name = item.get("place_name")
-        if isinstance(name, str) and name:
-            index[name] = item
+    for container in containers:
+        parent_name = container.get("region_name")
+        if not isinstance(parent_name, str) or not parent_name.strip():
+            parent_name = container.get("place_name")
+        raw_locations = container.get("locations")
+        raw_rooms = container.get("rooms")
+
+        location_items: list[dict[str, Any]] = []
+        if isinstance(raw_locations, list):
+            location_items.extend(item for item in raw_locations if isinstance(item, dict))
+        if isinstance(raw_rooms, list):
+            location_items.extend(item for item in raw_rooms if isinstance(item, dict))
+
+        for loc in location_items:
+            location_name = loc.get("location_name")
+            if not isinstance(location_name, str) or not location_name.strip():
+                location_name = loc.get("room_name")
+            if not isinstance(location_name, str) or not location_name.strip():
+                continue
+            location_entry = dict(loc)
+            if isinstance(parent_name, str) and parent_name.strip():
+                location_entry["parent_place_name"] = parent_name
+            index[location_name] = location_entry
     return index
 
 
@@ -165,6 +192,64 @@ def _format_connection_line(connections: list[str]) -> str:
     return "A partir daqui você pode ir para " + ", ".join(rest) + f" e {last}."
 
 
+_NON_TRAVERSABLE_TOKENS = (
+    "não dá passagem",
+    "nao da passagem",
+    "só visão",
+    "so visao",
+    "apenas visão",
+    "apenas visao",
+    "sem passagem",
+)
+
+_HIDDEN_TOKENS = (
+    "secreto",
+    "oculto",
+    "escondido",
+    "mecanismo secreto",
+    "alçapão",
+    "alcapao",
+)
+
+
+def _connection_is_hidden(how: str) -> bool:
+    folded = _fold_for_match(how)
+    return any(token in folded for token in _HIDDEN_TOKENS)
+
+
+def _connection_seems_traversable(how: str) -> bool:
+    folded = _fold_for_match(how)
+    return not any(token in folded for token in _NON_TRAVERSABLE_TOKENS)
+
+
+def _extract_connections_from_entry(entry: dict[str, Any]) -> list[dict[str, object]]:
+    raw_conns = entry.get("connections", [])
+    if not isinstance(raw_conns, list):
+        raise TypeError("connections must be a list")
+
+    connections: list[dict[str, object]] = []
+    for conn in raw_conns:
+        if not isinstance(conn, dict):
+            continue
+        to_raw = conn.get("to")
+        how_raw = conn.get("how")
+        to = to_raw.strip() if isinstance(to_raw, str) else ""
+        how = how_raw.strip() if isinstance(how_raw, str) else ""
+        if not to or not how:
+            continue
+        hidden = _connection_is_hidden(how)
+        traversable = _connection_seems_traversable(how) and not hidden
+        connections.append(
+            {
+                "to": to,
+                "how": how,
+                "destination_hidden_until_discovery": hidden,
+                "seems_traversable_now": traversable,
+            }
+        )
+    return connections
+
+
 # Strips spoiler blocks from raw map prose (labels like "Segredo:" / "Armadilha:" and the rest of
 # the string from that point). Does not match "segredos" without an immediate label colon.
 _SECRET_TAIL = re.compile(
@@ -244,12 +329,25 @@ def move_to_place(
             hint = f" Sugestões: {', '.join(near)}."
         raise ValueError(f"Unknown place_name: {trimmed!r}.{hint}")
 
-    entry = index[resolved]
+    if session_state is not None and session_state.current_place_name is not None:
+        current = session_state.current_place_name
+        current_entry = index.get(current)
+        if current_entry is not None:
+            current_connections = _extract_connections_from_entry(current_entry)
+            allowed = {
+                str(c["to"])
+                for c in current_connections
+                if bool(c.get("seems_traversable_now", False))
+            }
+            if resolved != current and resolved not in allowed:
+                allowed_hint = ", ".join(sorted(allowed)) if allowed else "(nenhuma passagem direta)"
+                raise ValueError(
+                    f"Invalid move from {current!r} to {resolved!r}. "
+                    f"Conexões diretas válidas agora: {allowed_hint}."
+                )
 
-    raw_conns = entry.get("connections", [])
-    if not isinstance(raw_conns, list):
-        raise TypeError("connections must be a list")
-    connections = [c for c in raw_conns if isinstance(c, str)]
+    entry = index[resolved]
+    connections = _extract_connections_from_entry(entry)
 
     description_full = entry.get("description", "")
     if not isinstance(description_full, str):
@@ -257,11 +355,21 @@ def move_to_place(
 
     description = _description_for_player_facing(description_full)
 
-    connection_line = _format_connection_line(connections)
+    public_connection_hows = [
+        str(c["how"])
+        for c in connections
+        if not bool(c.get("destination_hidden_until_discovery", False))
+    ]
+    connection_line = _format_connection_line(public_connection_hows)
     player_facing_summary = f"{description}\n\n{connection_line}"
+
+    is_revisit = False
+    if session_state is not None:
+        is_revisit = resolved in session_state.places_entered_via_move
 
     result: dict[str, object] = {
         "place_name": resolved,
+        "revisit": is_revisit,
         "description": description,
         "description_full": description_full,
         "connections": connections,
@@ -269,7 +377,7 @@ def move_to_place(
     }
 
     if session_state is not None:
-        first_visit = resolved not in session_state.places_entered_via_move
+        first_visit = not is_revisit
         public = _public_scene_image_path(resolved)
         if scene_images_enabled() and first_visit and public is not None:
             result["place_scene_image"] = {
@@ -278,6 +386,8 @@ def move_to_place(
                 "note": "First visit this session; scene image feature is enabled.",
             }
         session_state.places_entered_via_move.add(resolved)
+        session_state.known_place_names.add(resolved)
+        session_state.current_place_name = resolved
 
     return result
 
@@ -289,10 +399,23 @@ def run(arguments_json: str, *, session_state: GameSessionState | None = None) -
             raise TypeError("place_name must be a string")
         return move_to_place(name, session_state=session_state)
 
+    def _move_log_line(r: dict[str, object]) -> str:
+        raw_conns = r.get("connections")
+        dests: list[object] = []
+        if isinstance(raw_conns, list):
+            for c in raw_conns:
+                if isinstance(c, dict) and "to" in c:
+                    dests.append(c["to"])
+        return "place_name=%r revisit=%s dests=%s scene=%s" % (
+            r["place_name"],
+            r.get("revisit"),
+            dests,
+            "yes" if r.get("place_scene_image") else "no",
+        )
+
     return invoke_tool(
         "move",
         arguments_json,
         execute,
-        log_line=lambda r: "place_name=%r connections=%s scene=%s"
-        % (r["place_name"], r["connections"], "yes" if r.get("place_scene_image") else "no"),
+        log_line=_move_log_line,
     )

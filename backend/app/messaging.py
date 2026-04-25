@@ -13,9 +13,24 @@ SECTION_PLAYER_INTENT = f"### PLAYER_INTENT ({Participant.PLAYER.value} → narr
 SECTION_ENGINE_CONTEXT = f"### ENGINE_CONTEXT ({Participant.ENGINE_TOOLS.value} → narrador, sync)"
 
 
-def format_engine_context_for_prompt(*, fatigue_percent: float, game_clock_minutes: float) -> str:
+def format_engine_context_for_prompt(
+    *,
+    fatigue_percent: float,
+    game_clock_minutes: float,
+    current_place_name: str | None = None,
+    known_place_names: tuple[str, ...] | None = None,
+) -> str:
     label = fatigue_label_for_context(fatigue_percent)
     clock = format_game_clock_for_prompt(game_clock_minutes)
+    pos = (
+        current_place_name.strip()
+        if isinstance(current_place_name, str) and current_place_name.strip()
+        else "(ainda não posicionado pelo motor)"
+    )
+    if known_place_names:
+        known_line = ", ".join(known_place_names)
+    else:
+        known_line = "(nenhum ainda)"
     return (
         f"{SECTION_ENGINE_CONTEXT}\n"
         "- Fadiga interna (acrobacia), só qualitativa: "
@@ -24,15 +39,27 @@ def format_engine_context_for_prompt(*, fatigue_percent: float, game_clock_minut
         "- Tempo in-game (estimativa do motor), relógio 24h: "
         f"**{clock}** — âncora para passagem de tempo na ficção; não exponha como interface nem "
         "leia o horário em voz alta de forma meta, salvo se a cena tiver um relógio ou alguém "
-        "perguntar as horas."
+        "perguntar as horas.\n"
+        f"- **Lugar atual (nome canônico do mapa):** {pos}\n"
+        "- **Nomes do mapa que o jogador já visitou** (pode tratar como «já vi este cômodo»; "
+        "intenção em **primeira pessoa** não deve nomear destinos **fora** desta lista como fato "
+        f"que o personagem já conhece): {known_line}"
     )
 
 
 def build_turn_user_content(
-    player_intent: str, *, fatigue_percent: float, game_clock_minutes: float
+    player_intent: str,
+    *,
+    fatigue_percent: float,
+    game_clock_minutes: float,
+    current_place_name: str | None = None,
+    known_place_names: tuple[str, ...] | None = None,
 ) -> str:
     intent = player_intent.strip()
     ctx = format_engine_context_for_prompt(
-        fatigue_percent=fatigue_percent, game_clock_minutes=game_clock_minutes
+        fatigue_percent=fatigue_percent,
+        game_clock_minutes=game_clock_minutes,
+        current_place_name=current_place_name,
+        known_place_names=known_place_names,
     )
     return f"{SECTION_PLAYER_INTENT}\n{intent}\n\n{ctx}"

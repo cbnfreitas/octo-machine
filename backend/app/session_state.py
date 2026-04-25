@@ -10,6 +10,8 @@ class GameSessionState:
         "fatigue_percent",
         "game_clock_minutes",
         "places_entered_via_move",
+        "known_place_names",
+        "current_place_name",
         "_lock",
     )
 
@@ -17,6 +19,8 @@ class GameSessionState:
         self.fatigue_percent = 0.0
         self.game_clock_minutes = normalize_clock_minutes(initial_game_clock_minutes)
         self.places_entered_via_move: set[str] = set()
+        self.known_place_names: set[str] = set()
+        self.current_place_name: str | None = None
         self._lock = asyncio.Lock()
 
     @property

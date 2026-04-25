@@ -28,9 +28,7 @@ from app.system_prompt import (
 )
 from tools import TOOLS, run_tool
 from tools.move import (
-    STARTING_PLACE_NAME,
     get_initial_game_clock_minutes,
-    public_scene_image_url_for_place,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -245,31 +243,59 @@ async def chat(ws: WebSocket):
         },
     ]
     await ws.send_json({"type": "opening_start"})
-    opening_scene_url = public_scene_image_url_for_place(STARTING_PLACE_NAME)
-    if scene_images_enabled() and opening_scene_url:
-        await ws.send_json(
-            {
-                "type": "scene_image",
-                "url": opening_scene_url,
-                "place_name": STARTING_PLACE_NAME,
-            }
-        )
-        session_state.places_entered_via_move.add(STARTING_PLACE_NAME)
 
     opening_text = ""
     forwarded = 0
     try:
         try:
-            opening_text, opening_tools, _, forwarded, _ = await _stream_model_round(
-                client,
-                ws,
-                messages,
-                forward_tokens=True,
-                use_tools=False,
-            )
-            if opening_tools:
-                logger.warning("[chat] opening round requested tools unexpectedly")
-            opening_text = opening_text.strip()
+            round_num = 0
+            while True:
+                round_num += 1
+                if round_num > MAX_TOOL_ROUNDS:
+                    raise RuntimeError("Tool loop limit reached in opening turn")
+                opening_text, has_tools, typed_calls, _, pending_token_chunks = (
+                    await _stream_model_round(
+                        client,
+                        ws,
+                        messages,
+                        buffer_tokens_until_tool_round_complete=True,
+                    )
+                )
+                if has_tools:
+                    opening_asst_msg: ChatCompletionAssistantMessageParam = {
+                        "role": "assistant",
+                        "tool_calls": typed_calls,
+                    }
+                    if opening_text:
+                        opening_asst_msg["content"] = opening_text
+                    messages.append(opening_asst_msg)
+
+                    for tc in typed_calls:
+                        fn = tc["function"]
+                        assert isinstance(fn, dict)
+                        tname = str(fn["name"])
+                        targs = str(fn.get("arguments", ""))
+                        logger.info(
+                            "[%s] [narrator_llm -> engine] tool_call id=%s name=%s args=%s",
+                            _hhmm(),
+                            str(tc.get("id", "")),
+                            yellow_tool(tname),
+                            targs[:4000] + ("…" if len(targs) > 4000 else ""),
+                        )
+                        result = await run_tool(tname, targs, session_state=session_state)
+                        await _push_scene_image_from_move_result(ws, tname, result)
+                        messages.append(
+                            {
+                                "role": "tool",
+                                "tool_call_id": str(tc["id"]),
+                                "content": result,
+                            }
+                        )
+                    for piece in pending_token_chunks:
+                        await ws.send_json({"type": "token", "text": piece})
+                    continue
+                opening_text = opening_text.strip()
+                break
         except Exception:
             logger.exception("[chat] opening generation failed; using fallback text")
             opening_text = ""
@@ -311,6 +337,8 @@ async def chat(ws: WebSocket):
             async with session_state.lock:
                 fatigue_now = session_state.fatigue_percent
                 clock_now = session_state.game_clock_minutes
+                known_now = tuple(sorted(session_state.known_place_names))
+                current_now = session_state.current_place_name
             messages.append(
                 {
                     "role": "user",
@@ -318,6 +346,8 @@ async def chat(ws: WebSocket):
                         content,
                         fatigue_percent=fatigue_now,
                         game_clock_minutes=clock_now,
+                        current_place_name=current_now,
+                        known_place_names=known_now,
                     ),
                 }
             )
