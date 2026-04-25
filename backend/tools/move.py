@@ -30,8 +30,8 @@ def _tool_system_instruction() -> str:
         "de forma pertinente**; nunca copie `description_full` inteiro de uma vez para o jogador. "
         "`connections` é uma lista de objetos com `to`, `how` e sinalizadores de passagem; use `how` "
         "como base perceptiva (ver regras de POV no system prompt). "
-        "Se um deslocamento não tiver ligação direta (ex.: A -> C), você pode chamar `move` em etapas "
-        "adjacentes válidas (A -> B -> C) no mesmo turno e narrar o resultado final sem listar cada passo técnico."
+        "Quando origem e destino não forem adjacentes, `move` pode resolver deslocamento em múltiplas "
+        "etapas por nós já visitados e retorna também o caminho percorrido."
     )
     if scene_images_enabled():
         return (
@@ -51,8 +51,8 @@ TOOL: ChatCompletionToolUnionParam = {
         "name": "move",
         "description": (
             "Registra a chegada do jogador a um lugar do mapa. Devolve a descrição do ambiente, "
-            "os destinos ligados a ele e um resumo para você narrar. Use quando o jogador for "
-            "para outro cômodo ou ao resolver deslocamento."
+            "os destinos ligados a ele, o caminho percorrido e um resumo para você narrar. "
+            "Use quando o jogador for para outro cômodo ou ao resolver deslocamento."
         ),
         "parameters": {
             "type": "object",
@@ -259,6 +259,55 @@ def _extract_connections_from_entry(entry: dict[str, Any]) -> list[dict[str, obj
     return connections
 
 
+def _build_shortest_path(
+    *,
+    current: str,
+    target: str,
+    index: dict[str, dict[str, Any]],
+    visited_nodes: set[str],
+) -> list[str] | None:
+    if current == target:
+        return [current]
+    allowed_nodes = set(visited_nodes)
+    allowed_nodes.add(current)
+    allowed_nodes.add(target)
+
+    queue: list[str] = [current]
+    prev: dict[str, str | None] = {current: None}
+    q_idx = 0
+
+    while q_idx < len(queue):
+        node = queue[q_idx]
+        q_idx += 1
+        node_entry = index.get(node)
+        if node_entry is None:
+            continue
+        for conn in _extract_connections_from_entry(node_entry):
+            if not bool(conn.get("seems_traversable_now", False)):
+                continue
+            nxt = str(conn["to"])
+            if nxt not in allowed_nodes:
+                continue
+            if nxt in prev:
+                continue
+            prev[nxt] = node
+            if nxt == target:
+                queue = []
+                break
+            queue.append(nxt)
+
+    if target not in prev:
+        return None
+
+    path: list[str] = []
+    step: str | None = target
+    while step is not None:
+        path.append(step)
+        step = prev[step]
+    path.reverse()
+    return path
+
+
 # Strips spoiler blocks from raw map prose (labels like "Segredo:" / "Armadilha:" and the rest of
 # the string from that point). Does not match "segredos" without an immediate label colon.
 _SECRET_TAIL = re.compile(
@@ -364,6 +413,7 @@ def move_to_place(
             hint = f" Sugestões: {', '.join(near)}."
         raise ValueError(f"Unknown place_name: {trimmed!r}.{hint}")
 
+    path_taken = [resolved]
     if session_state is not None and session_state.current_place_name is not None:
         current = session_state.current_place_name
         current_entry = index.get(current)
@@ -375,11 +425,23 @@ def move_to_place(
                 if bool(c.get("seems_traversable_now", False))
             }
             if resolved != current and resolved not in allowed:
-                allowed_hint = ", ".join(sorted(allowed)) if allowed else "(nenhuma passagem direta)"
-                raise ValueError(
-                    f"Invalid move from {current!r} to {resolved!r}. "
-                    f"Conexões diretas válidas agora: {allowed_hint}."
+                visited_nodes = set(session_state.known_place_names)
+                visited_nodes.add(current)
+                shortest_path = _build_shortest_path(
+                    current=current,
+                    target=resolved,
+                    index=index,
+                    visited_nodes=visited_nodes,
                 )
+                if shortest_path is None:
+                    allowed_hint = ", ".join(sorted(allowed)) if allowed else "(nenhuma passagem direta)"
+                    raise ValueError(
+                        f"Invalid move from {current!r} to {resolved!r}. "
+                        f"Conexões diretas válidas agora: {allowed_hint}."
+                    )
+                path_taken = shortest_path
+            else:
+                path_taken = [current, resolved] if resolved != current else [current]
 
     entry = index[resolved]
     connections = _extract_connections_from_entry(entry)
@@ -410,6 +472,7 @@ def move_to_place(
 
     result: dict[str, object] = {
         "place_name": resolved,
+        "path_taken": path_taken,
         "revisit": is_revisit,
         "description": description,
         "description_full": description_full,
@@ -442,14 +505,19 @@ def run(arguments_json: str, *, session_state: GameSessionState | None = None) -
 
     def _move_log_line(r: dict[str, object]) -> str:
         raw_conns = r.get("connections")
+        raw_path = r.get("path_taken")
         dests: list[object] = []
+        path_taken: list[object] = []
         if isinstance(raw_conns, list):
             for c in raw_conns:
                 if isinstance(c, dict) and "to" in c:
                     dests.append(c["to"])
-        return "place_name=%r revisit=%s dests=%s scene=%s" % (
+        if isinstance(raw_path, list):
+            path_taken.extend(raw_path)
+        return "place_name=%r revisit=%s path=%s dests=%s scene=%s" % (
             r["place_name"],
             r.get("revisit"),
+            path_taken,
             dests,
             "yes" if r.get("place_scene_image") else "no",
         )
