@@ -327,29 +327,15 @@ def _description_for_player_facing(raw: str) -> str:
     return " ".join(text.split())
 
 
-def _remove_term_from_description(text: str, term: str) -> str:
-    escaped = re.escape(term.strip())
-    if not escaped:
-        return text
-    cleaned = re.sub(rf"\b{escaped}\b", "", text, flags=re.IGNORECASE)
-    cleaned = re.sub(r"\s{2,}", " ", cleaned)
-    cleaned = re.sub(r"\s+([,.;:!?])", r"\1", cleaned)
-    cleaned = re.sub(r"([,.;:!?]){2,}", r"\1", cleaned)
-    return cleaned.strip(" ,.;:")
-
-
-def _apply_place_description_removals(
+def _place_description_for_session(
     place_name: str, raw_description: str, *, session_state: GameSessionState | None = None
 ) -> str:
     if session_state is None:
         return raw_description
-    removed_terms = session_state.place_description_removed_terms.get(place_name, set())
-    if not removed_terms:
-        return raw_description
-    result = raw_description
-    for term in sorted(removed_terms, key=len, reverse=True):
-        result = _remove_term_from_description(result, term)
-    return result or "Sem elementos visíveis de destaque neste local."
+    dynamic = session_state.place_dynamic_descriptions.get(place_name)
+    if isinstance(dynamic, str) and dynamic.strip():
+        return dynamic.strip()
+    return raw_description
 
 
 def _strip_control_chars(s: str) -> str:
@@ -449,7 +435,7 @@ def move_to_place(
     description_full_base = entry.get("description", "")
     if not isinstance(description_full_base, str):
         description_full_base = str(description_full_base)
-    description_full = _apply_place_description_removals(
+    description_full = _place_description_for_session(
         resolved,
         description_full_base,
         session_state=session_state,

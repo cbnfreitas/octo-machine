@@ -78,7 +78,7 @@ BACKSTAGE_TOOLS: list[ChatCompletionToolUnionParam] = cast(
                 "name": ADJUST_WORLD_TOOL_NAME,
                 "description": (
                     "Atualiza estado do mundo após ações já concretizadas na narração: stash do jogador "
-                    "e termos que devem sumir da descrição de um lugar."
+                    "e descrições dinâmicas dos lugares."
                 ),
                 "parameters": {
                     "type": "object",
@@ -88,21 +88,20 @@ BACKSTAGE_TOOLS: list[ChatCompletionToolUnionParam] = cast(
                             "items": {"type": "string"},
                             "description": "Itens para adicionar ao saco do jogador neste turno.",
                         },
-                        "place_description_removals": {
+                        "place_description_updates": {
                             "type": "array",
                             "description": (
-                                "Lista de ajustes visuais por lugar, removendo termos da descrição base."
+                                "Lista de descrições completas atualizadas por lugar após mudanças no mundo."
                             ),
                             "items": {
                                 "type": "object",
                                 "properties": {
                                     "place_name": {"type": "string"},
-                                    "terms": {
-                                        "type": "array",
-                                        "items": {"type": "string"},
+                                    "description": {
+                                        "type": "string",
                                     },
                                 },
-                                "required": ["place_name", "terms"],
+                                "required": ["place_name", "description"],
                             },
                         },
                         "reason": {
@@ -110,7 +109,7 @@ BACKSTAGE_TOOLS: list[ChatCompletionToolUnionParam] = cast(
                             "description": "Justificativa curta para log técnico (PT-BR).",
                         },
                     },
-                    "required": ["stash_add", "place_description_removals", "reason"],
+                    "required": ["stash_add", "place_description_updates", "reason"],
                 },
             },
         },
@@ -131,7 +130,7 @@ def _build_backstage_user_content(
     fatigue_before: float,
     game_clock_before: float,
     stash_before: tuple[str, ...],
-    removed_terms_before: dict[str, tuple[str, ...]],
+    dynamic_descriptions_before: dict[str, str],
 ) -> str:
     label = fatigue_label_for_context(fatigue_before)
     clock = format_game_clock_for_prompt(game_clock_before)
@@ -140,14 +139,15 @@ def _build_backstage_user_content(
     )
     hidden = snap.hidden_beyond_player_perception.strip() or "(nada fornecido)"
     stash_line = ", ".join(stash_before) if stash_before else "(vazio)"
-    if removed_terms_before:
-        removed_lines = []
-        for place_name in sorted(removed_terms_before):
-            terms = ", ".join(removed_terms_before[place_name])
-            removed_lines.append(f"- {place_name}: {terms}")
-        removed_block = "\n".join(removed_lines)
+    if dynamic_descriptions_before:
+        dynamic_lines = []
+        for place_name in sorted(dynamic_descriptions_before):
+            description = dynamic_descriptions_before[place_name]
+            preview = description[:120] + ("..." if len(description) > 120 else "")
+            dynamic_lines.append(f"- {place_name}: {preview}")
+        dynamic_block = "\n".join(dynamic_lines)
     else:
-        removed_block = "(nenhum termo removido)"
+        dynamic_block = "(nenhuma descrição dinâmica definida)"
     return (
         "### Estado atual (fadiga interna - acrobacia)\n"
         f"Valor motor: {fatigue_before:.1f}/100. Rótulo qualitativo: {label}\n\n"
@@ -163,14 +163,15 @@ def _build_backstage_user_content(
         f"{hidden}\n\n"
         "### Estado do mundo atual (persistente)\n"
         f"- Itens no saco (stash): {stash_line}\n"
-        f"- Termos removidos das descrições por lugar:\n{removed_block}\n\n"
+        f"- Descrições dinâmicas por lugar:\n{dynamic_block}\n\n"
         "Chame **adjust_backstage_state** com **fatigue_delta** e **game_time_delta_minutes**. Se a narração "
         "não consolidou esforço, falha, manobra ou descanso **na ficção**, e não há sinal físico nos JSONs, "
         "use **fatigue_delta 0**. Se o turno for só troca de frases, esclarecimento ou foco no mesmo instante, "
         "use **game_time_delta_minutes 0** (ou poucos minutos se a prosa indicar pausa curta real).\n\n"
         "Quando houver mudança concreta de objetos no mundo (item pego, roubado, quebrado, consumido, "
         "sumido da cena), chame também **adjust_world_state** no mesmo turno para manter consistência: "
-        "adicione item em `stash_add` e remova termos da descrição em `place_description_removals`."
+        "adicione item em `stash_add` e atualize a `description` completa do lugar afetado em "
+        "`place_description_updates`."
     )
 
 
@@ -200,7 +201,7 @@ def _parse_backstage_adjust(arguments_json: str) -> tuple[float, float, str]:
     return float(fd), float(td), reason.strip()
 
 
-def _parse_world_adjust(arguments_json: str) -> tuple[list[str], list[tuple[str, list[str]]], str]:
+def _parse_world_adjust(arguments_json: str) -> tuple[list[str], list[tuple[str, str]], str]:
     raw = json.loads(arguments_json) if arguments_json else {}
     if not isinstance(raw, dict):
         raise ValueError("tool arguments must be an object")
@@ -209,25 +210,23 @@ def _parse_world_adjust(arguments_json: str) -> tuple[list[str], list[tuple[str,
         raise ValueError("stash_add must be an array")
     stash_add = [str(item).strip() for item in stash_raw if str(item).strip()]
 
-    removals_raw = raw.get("place_description_removals", [])
-    if not isinstance(removals_raw, list):
-        raise ValueError("place_description_removals must be an array")
-    removals: list[tuple[str, list[str]]] = []
-    for item in removals_raw:
+    updates_raw = raw.get("place_description_updates", [])
+    if not isinstance(updates_raw, list):
+        raise ValueError("place_description_updates must be an array")
+    updates: list[tuple[str, str]] = []
+    for item in updates_raw:
         if not isinstance(item, dict):
             continue
         place_name = str(item.get("place_name", "")).strip()
-        terms_raw = item.get("terms", [])
-        if not place_name or not isinstance(terms_raw, list):
+        description = str(item.get("description", "")).strip()
+        if not place_name or not description:
             continue
-        terms = [str(term).strip() for term in terms_raw if str(term).strip()]
-        if terms:
-            removals.append((place_name, terms))
+        updates.append((place_name, description))
 
     reason = raw.get("reason", "")
     if not isinstance(reason, str):
         reason = str(reason)
-    return stash_add, removals, reason.strip()
+    return stash_add, updates, reason.strip()
 
 
 async def apply_backstage_llm(client: OpenAI, state: GameSessionState, snap: BackstageTurnSnapshot) -> None:
@@ -235,17 +234,14 @@ async def apply_backstage_llm(client: OpenAI, state: GameSessionState, snap: Bac
         fatigue_before = state.fatigue_percent
         game_clock_before = state.game_clock_minutes
         stash_before = tuple(sorted(state.stash_items))
-        removed_terms_before = {
-            place_name: tuple(sorted(terms))
-            for place_name, terms in state.place_description_removed_terms.items()
-        }
+        dynamic_descriptions_before = dict(state.place_dynamic_descriptions)
 
     user_content = _build_backstage_user_content(
         snap,
         fatigue_before,
         game_clock_before,
         stash_before,
-        removed_terms_before,
+        dynamic_descriptions_before,
     )
     messages: list[ChatCompletionMessageParam] = [
         {"role": "system", "content": backstage_system_prompt()},
@@ -317,23 +313,26 @@ async def apply_backstage_llm(client: OpenAI, state: GameSessionState, snap: Bac
 
                 if tc.function.name == ADJUST_WORLD_TOOL_NAME:
                     try:
-                        stash_add, removals, reason = _parse_world_adjust(str(tc.function.arguments or ""))
+                        stash_add, updates, reason = _parse_world_adjust(str(tc.function.arguments or ""))
                     except (json.JSONDecodeError, ValueError) as e:
                         logger.warning("[%s] [backstage_llm] bad world args: %s", _hhmm(), e)
                         continue
                     async with state.lock:
                         before_stash = len(state.stash_items)
                         state.stash_items.update(stash_add)
-                        for place_name, terms in removals:
-                            bucket = state.place_description_removed_terms.setdefault(place_name, set())
-                            bucket.update(terms)
+                        changed_places = 0
+                        for place_name, description in updates:
+                            prev = state.place_dynamic_descriptions.get(place_name)
+                            if prev != description:
+                                changed_places += 1
+                            state.place_dynamic_descriptions[place_name] = description
                         after_stash = len(state.stash_items)
                     tool_calls_executed += 1
                     logger.info(
                         "[%s] [backstage_llm] world stash +%d, places_changed=%d reason=%r",
                         _hhmm(),
                         after_stash - before_stash,
-                        len(removals),
+                        changed_places,
                         reason[:200],
                     )
                     continue

@@ -13,7 +13,7 @@ class GameSessionState:
         "known_place_names",
         "current_place_name",
         "stash_items",
-        "place_description_removed_terms",
+        "place_dynamic_descriptions",
         "_lock",
     )
 
@@ -24,7 +24,7 @@ class GameSessionState:
         self.known_place_names: set[str] = set()
         self.current_place_name: str | None = None
         self.stash_items: set[str] = set()
-        self.place_description_removed_terms: dict[str, set[str]] = {}
+        self.place_dynamic_descriptions: dict[str, str] = {}
         self._lock = asyncio.Lock()
 
     @property
