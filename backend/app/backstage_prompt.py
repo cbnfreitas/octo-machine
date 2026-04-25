@@ -21,7 +21,7 @@ def backstage_system_prompt() -> str:
         "1. O que a **narração** descreve como **já tendo ocorrido** no corpo ou na cena (esforço, "
         "queda, manobra concluída, tensão muscular, **refeição copiosa ou comer demais** com efeito "
         "real na ficção, descanso que **aconteceu** na ficção).\n"
-        "2. Os **JSON das ferramentas** (ex.: `action_outcome`) quando existirem.\n"
+        "2. Os **JSON das ferramentas** (ex.: `roll_dice`) quando existirem.\n"
         "3. A **intenção** do jogador **não** substitui a narração: se ele diz \"faço uma acrobacia\" "
         "mas a narração **só** pede detalhes ou **não** concretiza a manobra, **não** houve novo esforço "
         "físico neste turno.\n"

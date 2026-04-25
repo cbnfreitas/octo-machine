@@ -65,7 +65,7 @@ for _d, (_s, _f) in _DIFFICULTY_D100_BOUNDS.items():
 
 
 TOOL_SYSTEM_INSTRUCTION = (
-    "Para ações incertas (teste, disputa, risco, oposição), chame `action_outcome` com **`skill`** "
+    "Para ações incertas (teste, disputa, risco, oposição), chame `roll_dice` com **`skill`** "
     "(texto livre: o que está a ser tentado; reservado para regras futuras) e **`difficulty`** entre "
     "`muito_facil`, `facil`, `medio`, `dificil`, `muito_dificil` - alinhado ao **risco real** na cena "
     "(mortal/giro completo: pelo menos `medio`, nunca `facil`). O sorteio usa d100 (1-100); 1% sucesso "
@@ -82,7 +82,7 @@ _DIFFICULTY_ENUM = list(_DIFFICULTY_ORDER)
 TOOL: ChatCompletionToolUnionParam = {
     "type": "function",
     "function": {
-        "name": "action_outcome",
+        "name": "roll_dice",
         "description": (
             "Resolve uma ação incerta com d100 por nível: muito_facil, facil, medio, dificil, muito_dificil."
         ),
@@ -112,7 +112,7 @@ TOOL: ChatCompletionToolUnionParam = {
 }
 
 
-def action_outcome(*, skill: str, difficulty: str) -> dict[str, object]:
+def roll_dice(*, skill: str, difficulty: str) -> dict[str, object]:
     outcome, roll_d100 = _roll_outcome(difficulty)
     return {
         "skill": skill,
@@ -132,10 +132,10 @@ def run(arguments_json: str) -> str:
         difficulty = args["difficulty"]
         if not isinstance(difficulty, str) or difficulty not in _DIFFICULTY_D100_BOUNDS:
             raise ValueError("difficulty must be one of the allowed enum values")
-        return action_outcome(skill=raw_skill, difficulty=difficulty)
+        return roll_dice(skill=raw_skill, difficulty=difficulty)
 
     return invoke_tool(
-        "action_outcome",
+        "roll_dice",
         arguments_json,
         execute,
         log_line=lambda r: "skill=%r difficulty=%s d100=%s outcome=%s (%s)"

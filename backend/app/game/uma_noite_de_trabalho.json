@@ -24,7 +24,7 @@
         {
           "location_name": "Cozinha",
           "basic_description": "Um cômodo quente e funcional. As brasas do fogão a lenha iluminam uma mesa simples com duas cadeiras e um castiçal apagado. Cheiro agradável de comida.",
-          "details": "Utensílios de boa qualidade organizados de forma prática. Um guisado repousa sobre o forno ainda aceso, espalhando calor e cheiro forte. Chão e paredes de pedra polida irregular. Sobre a mesa há um papel com a receita do guisado. Segredo difícil: há uma adaga de prata escondida na mesa, acomodada numa alça abaixo do tampo.",
+          "details": "Utensílios de boa qualidade organizados de forma prática. Um guisado repousa sobre o forno ainda aceso, espalhando calor e cheiro forte. Chão e paredes de pedra polida irregular. Sobre a mesa: prato com restos de guisado, faca de cozinha com cabo simples, copo pequeno com traço de vinho, castiçal apagado; o tampo fica levemente pegajoso ao tato. Há um papel com a receita do guisado. Segredo difícil: sob o tampo da mesa, numa alça oculta, guardam-se uma adaga de prata; só se nota com exame por baixo ou achado fino.",
           "connections": [
             {"to": "Vestíbulo", "how": "porta norte" },
             {"to": "Chafariz", "how": "pequena janela leste, sem passagem" },
