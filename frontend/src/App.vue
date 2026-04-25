@@ -70,7 +70,18 @@ onMounted(() => {
   }
   socket.onmessage = (ev) => {
     const data = JSON.parse(ev.data)
-    if (data.type === 'opening_start') {
+    if (data.type === 'fixed_intro') {
+      const t = typeof data.text === 'string' ? data.text : ''
+      if (t) {
+        messages.value.push({
+          role: 'assistant',
+          text: t,
+          streaming: false,
+          stamp: stampNow(),
+        })
+        scrollToBottom()
+      }
+    } else if (data.type === 'opening_start') {
       openingBusy.value = true
       messages.value.push({
         role: 'assistant',

@@ -117,11 +117,11 @@ def _place_index() -> dict[str, dict[str, Any]]:
     return index
 
 
-def get_game_intro() -> str:
-    intro = _raw_game_document().get("intro")
-    if not isinstance(intro, str):
+def get_game_fixed_intro() -> str:
+    raw = _raw_game_document().get("fixed_intro")
+    if not isinstance(raw, str):
         return ""
-    return intro.strip()
+    return raw.strip()
 
 
 def get_narrator_opening_note() -> str:

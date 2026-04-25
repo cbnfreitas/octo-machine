@@ -28,6 +28,7 @@ from app.system_prompt import (
 )
 from tools import TOOLS, run_tool
 from tools.move import (
+    get_game_fixed_intro,
     get_initial_game_clock_minutes,
 )
 
@@ -242,6 +243,9 @@ async def chat(ws: WebSocket):
             ),
         },
     ]
+    fixed_intro_text = get_game_fixed_intro()
+    if fixed_intro_text:
+        await ws.send_json({"type": "fixed_intro", "text": fixed_intro_text})
     await ws.send_json({"type": "opening_start"})
 
     opening_text = ""
@@ -301,7 +305,7 @@ async def chat(ws: WebSocket):
             logger.exception("[chat] opening generation failed; using fallback text")
             opening_text = ""
         if not opening_text:
-            opening_text = fallback_opening_message().strip()
+            opening_text = fallback_opening_message(session_state=session_state).strip()
         if opening_forwarded_tokens == 0 and opening_text:
             await ws.send_json({"type": "token", "text": opening_text})
     finally:

@@ -1,10 +1,11 @@
 from app.messaging import build_turn_user_content
 from app.feature_flags import scene_images_enabled
+from app.session_state import GameSessionState
 from tools import combined_tool_instructions
 from tools.move import (
     GAME_MAP_BASENAME,
     STARTING_PLACE_NAME,
-    get_game_intro,
+    get_game_fixed_intro,
     get_narrator_opening_note,
     move_to_place,
 )
@@ -16,13 +17,13 @@ NARRATION_FOLLOWUP_MAX_CHARS = 500
 OPENING_USER_PLACEHOLDER = "(Sessão iniciada. A abertura já foi narrada ao jogador.)"
 
 
-def fallback_opening_message() -> str:
-    """Last-resort opening if the model fails to generate one (plain concat, unstyled)."""
-    intro = get_game_intro()
-    start = move_to_place(STARTING_PLACE_NAME)
+def fallback_opening_message(*, session_state: GameSessionState | None = None) -> str:
+    """Last-resort second opening bubble if the model fails (fixed_intro is already on screen)."""
+    fixed = get_game_fixed_intro()
+    start = move_to_place(STARTING_PLACE_NAME, session_state=session_state)
     summary = str(start["player_facing_summary"])
-    if intro:
-        return f"{intro}\n\n{summary}"
+    if fixed.strip():
+        return summary
     return (
         "Este é um RPG em texto: você explora **esta casa**, indo de um lugar a outro.\n\n"
         f"{summary}"
@@ -30,18 +31,12 @@ def fallback_opening_message() -> str:
 
 
 def opening_turn_user_content(*, fatigue_percent: float = 0.0, game_clock_minutes: float = 0.0) -> str:
-    intro = get_game_intro()
     note_block = ""
     n = get_narrator_opening_note()
     if n.strip():
         note_block = f"\n### Nota do mapa para a abertura (respeita)\n{n.strip()}\n"
-    intro_block = (
-        intro.strip()
-        if intro.strip()
-        else "(Sem campo `intro` no mapa — abre só com a chegada ao lugar inicial.)"
-    )
     turn = build_turn_user_content(
-        "Vamos começar",
+        "Vamos começar, onde estou?",
         fatigue_percent=fatigue_percent,
         game_clock_minutes=game_clock_minutes,
         current_place_name=None,
@@ -50,16 +45,15 @@ def opening_turn_user_content(*, fatigue_percent: float = 0.0, game_clock_minute
     return (
         f"{turn}\n\n"
         "### Instrução (início de sessão)\n\n"
-        "Esta é a primeira jogada real da sessão. Antes de narrar a abertura ao jogador, chame "
-        f"`move` para o lugar inicial **{STARTING_PLACE_NAME}** e use o resultado como base factual "
-        "da cena. Escreva **uma única** mensagem de abertura, em PT-BR, obedecendo POV, segredo e economia "
-        "de detalhe do system prompt. **Não duplique** parágrafos nem repita o mesmo bloco duas vezes. "
-        "Se **### Intro** já descreveu faca, aldrava e entrada pela janela, **não** recomece essa sequência: "
-        "encoste nela com **uma** frase de transição no máximo e siga para o interior e o que o personagem "
-        "nota **agora** no lugar inicial.\n\n"
+        "Esta é a primeira jogada real da sessão. A **intro fixa** do mapa já foi mostrada ao jogador "
+        "(texto literal pela interface) e está no system prompt; **não** a repita. "
+        f"Antes de narrar onde o personagem está **agora**, chame `move` para o lugar inicial "
+        f"**{STARTING_PLACE_NAME}** e use o resultado como base factual da cena. "
+        "Responda à pergunta «onde estou?» em **uma única** mensagem, em PT-BR, obedecendo POV, segredo e "
+        "economia de detalhe do system prompt. **Não duplique** parágrafos. Se a intro fixa já cobriu faca, "
+        "aldrava e entrada pela janela, **não** recomece essa sequência: no máximo **uma** frase de ponte e "
+        "siga para o que ele nota **neste** cômodo.\n\n"
         f"{note_block}"
-        "### Intro (matéria-prima)\n\n"
-        f"{intro_block}\n"
     )
 
 
@@ -86,13 +80,29 @@ def _acrobatics_fatigue_section() -> str:
     )
 
 
+def _fixed_intro_context_section() -> str:
+    fixed = get_game_fixed_intro().strip()
+    if not fixed:
+        return ""
+    return (
+        "## Intro fixa (já exibida ao jogador, texto literal)\n\n"
+        f"{fixed}\n\n"
+        "A interface enviou o bloco acima como **primeira** mensagem da narradora, **sem alterações**. "
+        "**Não** repita esse texto na **segunda** mensagem (a que responde à ficha oculta "
+        "«Vamos começar, onde estou?»). Nessa resposta use só `move` para o lugar inicial e narre o que o "
+        "personagem percebe **neste** espaço, sem reencenar a escalada da janela salvo **no máximo** uma "
+        "frase de transição.\n\n"
+    )
+
+
 def _opening_contract_for_narrator() -> str:
     parts = [
         "O arquivo de mapa do jogo é **%s**." % GAME_MAP_BASENAME,
         (
-            "A **primeira** mensagem do assistente deve **narrar** a abertura após chamar `move` para "
-            "o lugar inicial **%s** nesta própria jogada inicial. Integre a **`intro`** (se existir) "
-            "com o retorno desse `move`, obedecendo a todas as regras (negrito, segredos, sem dicas)."
+            "A **segunda** mensagem do assistente na UI (após a intro fixa, se houver) deve **só** "
+            "responder «onde estou?»: chame `move` para o lugar inicial **%s** nesta jogada inicial e narre "
+            "a partir desse retorno. O texto da **`fixed_intro`** (se existir) está no system prompt **só** "
+            "como contexto: o jogador já leu tudo; **não** volte a colá-lo nem parafrasear por extenso."
             % STARTING_PLACE_NAME
         ),
     ]
@@ -103,6 +113,7 @@ def _opening_contract_for_narrator() -> str:
 
 
 def _rpg_sections() -> str:
+    fixed_intro_ctx = _fixed_intro_context_section()
     scene_image_note = ""
     if scene_images_enabled():
         scene_image_note = (
@@ -111,6 +122,7 @@ def _rpg_sections() -> str:
             "automaticamente; mantenha a prosa coerente com o ambiente. "
         )
     return (
+        f"{fixed_intro_ctx}"
         f"{_acrobatics_fatigue_section()}"
         "## Papel\n\n"
         "Você é a **narradora** de um **RPG em texto** para o Jogador: o objetivo é **explorar a "
@@ -139,9 +151,10 @@ def _rpg_sections() -> str:
         "houver tentativa arriscada). Se algo exigir um passo específico do jogador, **narre o que ele "
         "vê e sente** e **pare**—**não** antecipes o que fazer, **não** dê atalhos narrativos para a "
         "solução; deixe o mistério até ele decidir o próximo movimento.\n\n"
-        f"Na **abertura** o jogador já está na **{STARTING_PLACE_NAME}** e a primeira mensagem do "
-        "assistente já narrou o equivalente a um `move` para esse lugar—**não** chame `move` de novo para esse "
-        "lugar até que ele **saia e volte**.\n\n"
+        f"Depois da **narração inicial do lugar** (resposta a «onde estou?», logo após a intro fixa na UI "
+        f"se ela existir), o personagem já está na **{STARTING_PLACE_NAME}** e essa mensagem já cobriu o "
+        "equivalente a um `move` para esse lugar—**não** chame `move` de novo para esse lugar até que ele "
+        "**saia e volte**.\n\n"
         "**Não** repita a cena de abertura salvo se o jogador pedir explicitamente um resumo ou um "
         "recomeço. Para ações incertas, use as ferramentas indicadas abaixo; integre os resultados ao "
         "que você narrar, **sem** acrescentar fatos novos sobre o espaço que não constem da descrição "
