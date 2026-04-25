@@ -71,7 +71,10 @@ TOOL_SYSTEM_INSTRUCTION = (
     "(mortal/giro completo: pelo menos `medio`, nunca `facil`). O sorteio usa d100 (1-100); 1% sucesso "
     "crítico, 1% falha crítica; o meio segue a tabela do nível. Em testes de percepção/investigação: "
     "`facil` só para ação muito específica no ponto certo; `medio` para busca focada com incerteza; "
-    "`dificil`/`muito_dificil` para pistas sutis em baixa luz/pressão/obstrução. Integre o resultado na narração."
+    "`dificil`/`muito_dificil` para pistas sutis em baixa luz/pressão/obstrução. Em **falha** ou "
+    "**falha crítica** de investigação, narra inconclusão **sem** confirmar segredos nem repetir na "
+    "prosa nomes de suspeitas que só existem no texto do `skill` (evita vazar pistas ao jogador). "
+    "Integre o resultado na narração."
 )
 
 _DIFFICULTY_ENUM = list(_DIFFICULTY_ORDER)
