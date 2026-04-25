@@ -14,6 +14,7 @@ class GameSessionState:
         "current_place_name",
         "stash_items",
         "place_dynamic_descriptions",
+        "place_dynamic_details",
         "scene_facts_sheet",
         "_lock",
     )
@@ -26,6 +27,7 @@ class GameSessionState:
         self.current_place_name: str | None = None
         self.stash_items: set[str] = set()
         self.place_dynamic_descriptions: dict[str, str] = {}
+        self.place_dynamic_details: dict[str, str] = {}
         self.scene_facts_sheet: str = ""
         self._lock = asyncio.Lock()
 

@@ -24,9 +24,12 @@ def _tool_system_instruction() -> str:
         "`place_name` no **nome canônico** do mapa (como nas chaves de local do ficheiro JSON). "
         "Quem interpreta a fala natural do jogador e escolhe o destino correto é **você**; a tool só "
         "recebe o nome já resolvido. "
-        "A saída traz `description` e `player_facing_summary` **já filtrados** (sem blocos de "
-        "segredo/armadilha do arquivo bruto); use isso como base ao chegar. O campo `description_full` "
-        "é o texto integral do mapa—**só** use trechos ocultos quando o jogador **tiver explorado "
+        "A saída traz **`description`** (camada principal), **`details`** (camada extra) e "
+        "`player_facing_summary` **já filtrados** (sem blocos de segredo/armadilha do arquivo bruto). "
+        "Na **primeira narração ao chegar**, ancora-te sobretudo em **`description`**; `details` serve "
+        "para profundar quando o jogador foca, pede mais ou a cena o exige. O campo **`description_full`** "
+        "junta as duas camadas (filtradas) para o que o mapa autoriza a revelar por etapas—**só** use "
+        "trechos ocultos quando o jogador **tiver explorado "
         "de forma pertinente**; nunca copie `description_full` inteiro de uma vez para o jogador. "
         "`connections` é uma lista de objetos com `to`, `how` e sinalizadores de passagem; use `how` "
         "como base perceptiva (ver regras de POV no system prompt). "
@@ -340,15 +343,30 @@ def _description_for_player_facing(raw: str) -> str:
     return " ".join(text.split())
 
 
-def _place_description_for_session(
-    place_name: str, raw_description: str, *, session_state: GameSessionState | None = None
-) -> str:
+def _static_place_layer(entry: dict[str, Any], key: str) -> str:
+    raw = entry.get(key, "")
+    if not isinstance(raw, str):
+        return str(raw) if raw is not None else ""
+    return raw.strip()
+
+
+def _place_layers_for_session(
+    place_name: str,
+    entry: dict[str, Any],
+    *,
+    session_state: GameSessionState | None = None,
+) -> tuple[str, str]:
+    main = _static_place_layer(entry, "description")
+    det = _static_place_layer(entry, "details")
     if session_state is None:
-        return raw_description
-    dynamic = session_state.place_dynamic_descriptions.get(place_name)
-    if isinstance(dynamic, str) and dynamic.strip():
-        return dynamic.strip()
-    return raw_description
+        return main, det
+    dyn_main = session_state.place_dynamic_descriptions.get(place_name)
+    if isinstance(dyn_main, str) and dyn_main.strip():
+        main = dyn_main.strip()
+    dyn_det = session_state.place_dynamic_details.get(place_name)
+    if isinstance(dyn_det, str) and dyn_det.strip():
+        det = dyn_det.strip()
+    return main, det
 
 
 def _strip_control_chars(s: str) -> str:
@@ -445,16 +463,10 @@ def move_to_place(
     entry = index[resolved]
     connections = _extract_connections_from_entry(entry)
 
-    description_full_base = entry.get("description", "")
-    if not isinstance(description_full_base, str):
-        description_full_base = str(description_full_base)
-    description_full = _place_description_for_session(
-        resolved,
-        description_full_base,
-        session_state=session_state,
-    )
-
-    description = _description_for_player_facing(description_full)
+    main_raw, details_raw = _place_layers_for_session(resolved, entry, session_state=session_state)
+    description = _description_for_player_facing(main_raw)
+    details = _description_for_player_facing(details_raw)
+    description_full = description + ("\n\n" + details if details.strip() else "")
 
     public_connection_hows = [
         str(c["how"])
@@ -474,6 +486,7 @@ def move_to_place(
         "path_taken": path_taken,
         "revisit": is_revisit,
         "description": description,
+        "details": details,
         "description_full": description_full,
         "connections": connections,
         "player_facing_summary": player_facing_summary,

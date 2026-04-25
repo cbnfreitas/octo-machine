@@ -83,7 +83,7 @@ BACKSTAGE_TOOLS: list[ChatCompletionToolUnionParam] = cast(
                 "name": ADJUST_WORLD_TOOL_NAME,
                 "description": (
                     "Atualiza estado do mundo após ações já concretizadas na narração: stash do jogador "
-                    "e descrições dinâmicas dos lugares."
+                    "e camadas dinâmicas **description** e **details** por lugar."
                 ),
                 "parameters": {
                     "type": "object",
@@ -96,7 +96,8 @@ BACKSTAGE_TOOLS: list[ChatCompletionToolUnionParam] = cast(
                         "place_description_updates": {
                             "type": "array",
                             "description": (
-                                "Lista de descrições completas atualizadas por lugar após mudanças no mundo."
+                                "Lista de camadas **description** e **details** completas por lugar afetado "
+                                "(texto integral de cada camada após a mudança; coerente com a narração)."
                             ),
                             "items": {
                                 "type": "object",
@@ -104,9 +105,21 @@ BACKSTAGE_TOOLS: list[ChatCompletionToolUnionParam] = cast(
                                     "place_name": {"type": "string"},
                                     "description": {
                                         "type": "string",
+                                        "description": (
+                                            "Camada principal do lugar (impressão imediata ao chegar); "
+                                            "PT-BR, texto completo atualizado."
+                                        ),
+                                    },
+                                    "details": {
+                                        "type": "string",
+                                        "description": (
+                                            "Camada secundária (textura extra, arrumação, micro-cena); "
+                                            "PT-BR, texto completo atualizado. Use string vazia só se o mapa "
+                                            "não tiver detalhes para esse lugar."
+                                        ),
                                     },
                                 },
-                                "required": ["place_name", "description"],
+                                "required": ["place_name", "description", "details"],
                             },
                         },
                         "scene_facts": {
@@ -145,6 +158,7 @@ def _build_backstage_user_content(
     game_clock_before: float,
     stash_before: tuple[str, ...],
     dynamic_descriptions_before: dict[str, str],
+    dynamic_details_before: dict[str, str],
     scene_facts_before: str,
 ) -> str:
     label = fatigue_label_for_context(fatigue_before)
@@ -154,12 +168,17 @@ def _build_backstage_user_content(
     )
     hidden = snap.hidden_beyond_player_perception.strip() or "(nada fornecido)"
     stash_line = ", ".join(stash_before) if stash_before else "(vazio)"
-    if dynamic_descriptions_before:
+    place_keys = sorted(set(dynamic_descriptions_before) | set(dynamic_details_before))
+    if place_keys:
         dynamic_lines = []
-        for place_name in sorted(dynamic_descriptions_before):
-            description = dynamic_descriptions_before[place_name]
-            preview = description[:120] + ("..." if len(description) > 120 else "")
-            dynamic_lines.append(f"- {place_name}: {preview}")
+        for place_name in place_keys:
+            description = dynamic_descriptions_before.get(place_name, "")
+            details = dynamic_details_before.get(place_name, "")
+            d_prev = description[:100] + ("..." if len(description) > 100 else "")
+            t_prev = details[:100] + ("..." if len(details) > 100 else "")
+            dynamic_lines.append(
+                f"- {place_name}\n  description: {d_prev or '(mapa)'}\n  details: {t_prev or '(mapa)'}"
+            )
         dynamic_block = "\n".join(dynamic_lines)
     else:
         dynamic_block = "(nenhuma descrição dinâmica definida)"
@@ -188,8 +207,8 @@ def _build_backstage_user_content(
         "use **game_time_delta_minutes 0** (ou poucos minutos se a prosa indicar pausa curta real).\n\n"
         "Quando houver mudança concreta de objetos no mundo (item pego, roubado, quebrado, consumido, "
         "sumido da cena), chame também **adjust_world_state** no mesmo turno para manter consistência: "
-        "adicione item em `stash_add`, atualize a `description` completa do lugar afetado em "
-        "`place_description_updates` e reescreva `scene_facts` para refletir posições e estados "
+        "adicione item em `stash_add`, atualize **`description` e `details`** completos do lugar afetado "
+        "em `place_description_updates` e reescreva `scene_facts` para refletir posições e estados "
         "(mão, chão, stash, vela acesa, etc.)."
     )
 
@@ -220,7 +239,9 @@ def _parse_backstage_adjust(arguments_json: str) -> tuple[float, float, str]:
     return float(fd), float(td), reason.strip()
 
 
-def _parse_world_adjust(arguments_json: str) -> tuple[list[str], list[tuple[str, str]], str, str]:
+def _parse_world_adjust(
+    arguments_json: str,
+) -> tuple[list[str], list[tuple[str, str, str]], str, str]:
     raw = json.loads(arguments_json) if arguments_json else {}
     if not isinstance(raw, dict):
         raise ValueError("tool arguments must be an object")
@@ -232,15 +253,19 @@ def _parse_world_adjust(arguments_json: str) -> tuple[list[str], list[tuple[str,
     updates_raw = raw.get("place_description_updates", [])
     if not isinstance(updates_raw, list):
         raise ValueError("place_description_updates must be an array")
-    updates: list[tuple[str, str]] = []
+    updates: list[tuple[str, str, str]] = []
     for item in updates_raw:
         if not isinstance(item, dict):
             continue
         place_name = str(item.get("place_name", "")).strip()
         description = str(item.get("description", "")).strip()
+        det_raw = item.get("details", "")
+        if not isinstance(det_raw, str):
+            det_raw = str(det_raw) if det_raw is not None else ""
+        details = det_raw.strip()
         if not place_name or not description:
             continue
-        updates.append((place_name, description))
+        updates.append((place_name, description, details))
 
     scene_facts = raw.get("scene_facts", "")
     if not isinstance(scene_facts, str):
@@ -261,6 +286,7 @@ async def apply_backstage_llm(client: OpenAI, state: GameSessionState, snap: Bac
         game_clock_before = state.game_clock_minutes
         stash_before = tuple(sorted(state.stash_items))
         dynamic_descriptions_before = dict(state.place_dynamic_descriptions)
+        dynamic_details_before = dict(state.place_dynamic_details)
         scene_facts_before = state.scene_facts_sheet
 
     user_content = _build_backstage_user_content(
@@ -269,6 +295,7 @@ async def apply_backstage_llm(client: OpenAI, state: GameSessionState, snap: Bac
         game_clock_before,
         stash_before,
         dynamic_descriptions_before,
+        dynamic_details_before,
         scene_facts_before,
     )
     messages: list[ChatCompletionMessageParam] = [
@@ -351,11 +378,15 @@ async def apply_backstage_llm(client: OpenAI, state: GameSessionState, snap: Bac
                         before_stash = len(state.stash_items)
                         state.stash_items.update(stash_add)
                         changed_places = 0
-                        for place_name, description in updates:
-                            prev = state.place_dynamic_descriptions.get(place_name)
-                            if prev != description:
+                        for place_name, description, details in updates:
+                            new_desc = _sanitize_model_text(description)
+                            new_det = _sanitize_model_text(details)
+                            prev_desc = state.place_dynamic_descriptions.get(place_name)
+                            prev_det = state.place_dynamic_details.get(place_name)
+                            if prev_desc != new_desc or prev_det != new_det:
                                 changed_places += 1
-                            state.place_dynamic_descriptions[place_name] = _sanitize_model_text(description)
+                            state.place_dynamic_descriptions[place_name] = new_desc
+                            state.place_dynamic_details[place_name] = new_det
                         if scene_facts:
                             state.scene_facts_sheet = _sanitize_model_text(scene_facts)
                         after_stash = len(state.stash_items)

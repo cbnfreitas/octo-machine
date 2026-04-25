@@ -23,7 +23,8 @@
       "locations": [
         {
           "location_name": "Cozinha",
-          "description": "Utensílios de cozinha de boa qualidade, guisado no forno que ainda tem brasas acessas, uma mesa, 2 cadeiras e vela apagada sobre um castiçal. Chão e paredes pedra polida, levemente irregular. Segredo médio: embaixo da mesa há uma espada escondida. Há também um pedaço da papel sobre a mesa, está escrito a receita do guisado.",
+          "description": "Um cômodo quente e funcional. As brasas do fogão a lenha iluminam uma mesa simples com duas cadeiras e um castiçal apagado. Cheiro agradável de comida.",
+          "details": "Utensílios de boa qualidade organizados de forma prática. Um guisado repousa sobre o forno ainda aceso, espalhando calor e cheiro forte. Chão e paredes de pedra polida irregular. Sobre a mesa há um papel com a receita do guisado.. Segredo difícil: há uma adaga de prata escondida na mesa, acomodada numa alça abaixo do tampo.",
           "connections": [
             {"to": "Vestíbulo", "how": "porta norte" },
             {"to": "Chafariz", "how": "pequena janela leste, sem passagem" },
@@ -32,85 +33,82 @@
         },
         {
           "location_name": "Vestíbulo",
-          "description": "Hall com um vitral do lado sul bem no alto. Luz da lua entrando. Dá acesso a várias partes da casa.",
+          "description": "Um espaço circular silencioso, banhado pela luz da lua que entra por um vitral alto. Uma escada curva domina o ambiente.",
+          "details": "A escada começa a oeste e curva-se para o norte até um pequeno mezanino com porta ornamentada. O espaço ecoa levemente. Segredo difícil: pequena abertura de ventilação quase invisível leva ao quarto do Max.",
           "connections": [
-            {"to": "Quarto do Fatso", "how": "uma escadaria subindo, começa a oeste, virando para o norte encostada na parte. Há uma corrimão de madeira e um pequeno mezanino que dá pra porta, no topo. A porta é ricamente ornada com um relevo de madeira." },
-            {"to": "Despensa", "how": "porta simples menor, a sudoeste" },
-            {"to": "São Principal",  "how": "passagem a leste" },
-            {"to": "Quarto do Max",  "how": "Segredo difícil: pequena abertura para ventilação, um pouco abaixo do nível do mezanino, quase imperceptível" },
-            {"to": "Cozinha",  "how": "porta ao sul" }
+            {"to": "Quarto do Fatso", "how": "escadaria curva"},
+            {"to": "Despensa", "how": "porta sudoeste"},
+            {"to": "São Principal", "how": "passagem leste"},
+            {"to": "Quarto do Max", "how": "abertura secreta"},
+            {"to": "Cozinha", "how": "porta sul"}
           ]
         },
         {
           "location_name": "São Principal",
-          "description": "Bastante rico. Pé direito duplo, tapetes, sofá almofadas, 4 estátuas, tapeçarias, narguilés, arabesco no chão.",
+          "description": "Um salão amplo e luxuoso, com pé direito alto e sombras entre tapeçarias e estátuas de mármore.",
+          "details": "Tapetes cobrem o chão com arabescos. Sofás baixos e almofadas indicam conforto. Quatro estátuas, 2 homens e duas mulheres em poses heróicas. Tapeçarias decoram o ambiente, uma delas pequena o suficiente para ser roubada. Narguilés espalhados. Ao sul, uma treliça permite ver o chafariz no exterior da casa.",
           "connections": [
-            {"to": "Vestíbulo", "how": "passagem a sudoeste" },
-            {"to": "Quarto do Max", "how": "porta simples, noroeste" },
-            {"to": "Pátio interno", "how": "porta e janelas à leste" },
-            {"to": "Chafariz",  "how": "ao sul, uma treliça de madeira vazada, não dá passagem, só visão. Parcialmente coberta por uma cortina" }
-          ]
-        },
-        {
-          "location_name": "São Principal",
-          "description": "Pé direito duplo, tapetes, sofá almofadas, 4 estátuas, tapeçarias, narguilés, arabesco no chão.",
-          "connections": [
-            {"to": "Vestíbulo", "how": "passagem a sudoeste" },
-            {"to": "Quarto do Max", "how": "porta simples, noroeste. Imediatamente acima da porta há uma treliça de madeira vazada para luz e ventilação." },
-            {"to": "Pátio interno", "how": "porta grande e janelas à leste" },
-            {"to": "Chafariz",  "how": "ao sul, uma treliça de madeira vazada, não dá passagem, só visão. Parcialmente coberta por uma cortina" }
+            {"to": "Vestíbulo", "how": "sudoeste"},
+            {"to": "Quarto do Max", "how": "porta noroeste"},
+            {"to": "Pátio interno", "how": "porta e janelas leste"},
+            {"to": "Chafariz", "how": "treliça (sem passagem)"}
           ]
         },
         {
           "location_name": "Pátio interno",
-          "description": "Arborizado. Um caminho de pedras ligando a porta para a rua até o salão principal.",
+          "description": "Um espaço aberto e calmo, com vegetação sob a luz da lua.",
+          "details": "Árvores e plantas criam sombras suaves. Caminho de pedras conecta os ambientes. O ar é fresco e contrasta com o interior da casa.",
           "connections": [
-            {"to": "São Principal", "how": "porta grande ornada com um relevo de madeira a noroeste" },
-            {"to": "Chafariz",  "how": "sem portas ou barreiras, conexão a sudoeste" },
-            {"to": "Rua",  "how": "porta ao sul" }
+            {"to": "São Principal", "how": "porta noroeste"},
+            {"to": "Chafariz", "how": "aberto"},
+            {"to": "Rua", "how": "porta sul"}
           ]
         },
         {
           "location_name": "Chafariz",
-          "description": "Chafariz com água corrente, arabescos.",
+          "description": "Um pequeno chafariz ornamentado com água corrente, refletindo a luz da lua.",
+          "details": "Arabescos decoram a estrutura. O som da água ajuda a mascarar ruídos próximos. Segredo fácil: há algumas moedas de prata no chafariz.",
           "connections": [
-            {"to": "Cozinha", "how": "janela à oeste" },
-            {"to": "São Principal",  "how": "treliça de madeira vazada ao norte" },
-            {"to": "Pátio interno",  "how": "passagem livre a leste" }
+            {"to": "Cozinha", "how": "janela oeste"},
+            {"to": "São Principal", "how": "treliça norte"},
+            {"to": "Pátio interno", "how": "aberto"}
           ]
-        },        
+        },
         {
           "location_name": "Despensa",
-          "description": "Prateleiras, armários, barris. Muito escuro. Sem janela",
+          "description": "Um cômodo escuro e apertado, cheio de prateleiras e barris. Cheiro forte de grãos e especiarias.",
+          "details": "Caminhos estreitos entre barris. Há 12 potes com ervas nas prateleiras. Segredo médio: alçapão escondido sob um barril leva ao porão (fácil com luz).",
           "connections": [
-            {"to": "Vestíbulo", "how": "porta a leste" },
-            {"to": "Porão",  "how": "Segredo médio (fácil com luz) alçapão no assoalho, escondido abaixo de um barril. Escada que desce." }
+            {"to": "Vestíbulo", "how": "porta leste"},
+            {"to": "Porão", "how": "alçapão escondido"}
           ]
         },
         {
           "location_name": "Porão",
-          "description": "Caixas, barris, garrafas, estáticas, ainda mais escuro! Segredo difícil (médio com luz): em um dois barris, há uma fechadura, parece um cofre disfarçado. Ação média (fácil com luz): é possível arrombar a fechadura: há bolsa com joias dentro do barril!",
+          "description": "Um espaço abafado e escuro, repleto de barris e caixas.",
+          "details": "Ainda mais escuro que a despensa. Segredo (médio / fácil com luz): barril com fechadura disfarçada. É possível abrir com a chave dourado do Fatso. Possível arrombar (médio / fácil com luz). Dentro há uma bolsa com joias e um maço de papéis, poesia erótica, deve ser valioso!",
           "connections": [
-            {"to": "Despensa", "how": "subindo pela escada, saindo do alçapão" }
+            {"to": "Despensa", "how": "escada pelo alçapão"}
           ]
         },
         {
           "location_name": "Quarto do Fatso",
-          "description": "Estatuetas, armário roupas, arte, sineta",
+          "description": "Um quarto rico e silencioso, repleto de objetos decorativos.",
+          "details": "Estatuetas, armário com roupas finas e uma sineta próxima à cama. Janela com vista distante do mar. Segredo: puxar a sineta abre um alçapão para o quarto do Max, com queda perigosa. Segredo difícil: há uma bolsa de dinheiro embaixo do colchão. Segredo difícil: tem uma chave dourada no pescoço do velho.",
           "connections": [
-            {"to": "Vestíbulo", "how": "porta sul" },
-            {"to": "Rua", "how": "janela a oeste sul, dá pra ver o mar daqui." },
-            {"to": "Quarto do Max", "how": "Alçapão: secreto, ao puxa com força a sineta, o alçapão se abre. A queda é de alguns metros, podendo cair até sobre o Max se ele estiver dormindo." }
+            {"to": "Vestíbulo", "how": "porta sul"},
+            {"to": "Rua", "how": "janela"},
+            {"to": "Quarto do Max", "how": "alçapão secreto"}
           ]
-        }
-        ,
+        },
         {
           "location_name": "Quarto do Max",
-          "description": "Simples, uma esteira, uma cimitarra e um baú",
+          "description": "Um quarto simples e funcional, com poucos pertences.",
+          "details": "Uma esteira no chão, uma cimitarra e um baú. O ambiente é espartano. Possível encontrar o vigia dormindo aqui.",
           "connections": [
-            {"to": "São Principal", "how": "porta leste, com uma treliça de madeira vazada para luz e ventilação acima da porta." },
-            {"to": "Vestíbulo", "how": "pequena saída de ar ao sul." },
-            {"to": "Quarto do Fatso", "how": "Alçapão, mecanismo secreto no teto" }
+            {"to": "São Principal", "how": "porta leste"},
+            {"to": "Vestíbulo", "how": "abertura de ventilação"},
+            {"to": "Quarto do Fatso", "how": "alçapão no teto"}
           ]
         }
       ]
