@@ -29,7 +29,9 @@ def _tool_system_instruction() -> str:
         "é o texto integral do mapa—**só** use trechos ocultos quando o jogador **tiver explorado "
         "de forma pertinente**; nunca copie `description_full` inteiro de uma vez para o jogador. "
         "`connections` é uma lista de objetos com `to`, `how` e sinalizadores de passagem; use `how` "
-        "como base perceptiva (ver regras de POV no system prompt)."
+        "como base perceptiva (ver regras de POV no system prompt). "
+        "Se um deslocamento não tiver ligação direta (ex.: A -> C), você pode chamar `move` em etapas "
+        "adjacentes válidas (A -> B -> C) no mesmo turno e narrar o resultado final sem listar cada passo técnico."
     )
     if scene_images_enabled():
         return (
@@ -242,10 +244,14 @@ def _extract_connections_from_entry(entry: dict[str, Any]) -> list[dict[str, obj
             continue
         hidden = _connection_is_hidden(how)
         traversable = _connection_seems_traversable(how) and not hidden
+        public_how = how
+        if hidden:
+            public_how = "ligação oculta (não perceptível sem investigação)"
         connections.append(
             {
                 "to": to,
-                "how": how,
+                "how": public_how,
+                "how_raw": how,
                 "destination_hidden_until_discovery": hidden,
                 "seems_traversable_now": traversable,
             }

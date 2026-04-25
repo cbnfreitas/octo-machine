@@ -262,7 +262,6 @@ async def chat(ws: WebSocket):
                         client,
                         ws,
                         messages,
-                        buffer_tokens_until_tool_round_complete=True,
                     )
                 )
                 opening_forwarded_tokens += round_forwarded
@@ -281,9 +280,8 @@ async def chat(ws: WebSocket):
                         tname = str(fn["name"])
                         targs = str(fn.get("arguments", ""))
                         logger.info(
-                            "[%s] [narrator_llm -> engine] tool_call id=%s name=%s args=%s",
+                            "[%s] [narrator_llm -> engine] tool_call name=%s args=%s",
                             _hhmm(),
-                            str(tc.get("id", "")),
                             yellow_tool(tname),
                             targs[:4000] + ("…" if len(targs) > 4000 else ""),
                         )
@@ -379,7 +377,6 @@ async def chat(ws: WebSocket):
                             client,
                             ws,
                             messages,
-                            buffer_tokens_until_tool_round_complete=True,
                         )
                     )
 
@@ -398,9 +395,8 @@ async def chat(ws: WebSocket):
                             tname = str(fn["name"])
                             targs = str(fn.get("arguments", ""))
                             logger.info(
-                                "[%s] [narrator_llm -> engine] tool_call id=%s name=%s args=%s",
+                                "[%s] [narrator_llm -> engine] tool_call name=%s args=%s",
                                 _hhmm(),
-                                str(tc.get("id", "")),
                                 yellow_tool(tname),
                                 targs[:4000] + ("…" if len(targs) > 4000 else ""),
                             )
