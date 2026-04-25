@@ -343,6 +343,7 @@ async def chat(ws: WebSocket):
                 known_now = tuple(sorted(session_state.known_place_names))
                 current_now = session_state.current_place_name
                 stash_now = tuple(sorted(session_state.stash_items))
+                scene_facts_now = session_state.scene_facts_sheet
             messages.append(
                 {
                     "role": "user",
@@ -353,6 +354,7 @@ async def chat(ws: WebSocket):
                         current_place_name=current_now,
                         known_place_names=known_now,
                         stash_items=stash_now,
+                        scene_facts_sheet=scene_facts_now,
                     ),
                 }
             )

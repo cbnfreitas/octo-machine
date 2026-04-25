@@ -26,6 +26,11 @@ def _hhmm() -> str:
     return datetime.now().strftime("%H:%M")
 
 
+def _sanitize_model_text(text: str) -> str:
+    cleaned = "".join(ch for ch in text if ch != "\x00")
+    return " ".join(cleaned.split())
+
+
 _BACKSTAGE_MODEL = os.getenv("BACKSTAGE_MODEL") or os.getenv("OPENAI_MODEL", "gpt-5-mini")
 _MAX_FATIGUE_DELTA_PER_TURN = 50.0
 _MAX_GAME_TIME_DELTA_PER_TURN = 240.0
@@ -104,12 +109,21 @@ BACKSTAGE_TOOLS: list[ChatCompletionToolUnionParam] = cast(
                                 "required": ["place_name", "description"],
                             },
                         },
+                        "scene_facts": {
+                            "type": "string",
+                            "description": (
+                                "Fichas de cena em PT-BR: 2 a 8 linhas curtas com fatos físicos que o narrador "
+                                "deve obedecer até o próximo turno (onde está o saco, vela acesa ou apagada e "
+                                "onde está, itens no chão por cômodo, o que está só no stash). Atualize sempre "
+                                "que houver mudança de posse ou posição."
+                            ),
+                        },
                         "reason": {
                             "type": "string",
                             "description": "Justificativa curta para log técnico (PT-BR).",
                         },
                     },
-                    "required": ["stash_add", "place_description_updates", "reason"],
+                    "required": ["stash_add", "place_description_updates", "scene_facts", "reason"],
                 },
             },
         },
@@ -131,6 +145,7 @@ def _build_backstage_user_content(
     game_clock_before: float,
     stash_before: tuple[str, ...],
     dynamic_descriptions_before: dict[str, str],
+    scene_facts_before: str,
 ) -> str:
     label = fatigue_label_for_context(fatigue_before)
     clock = format_game_clock_for_prompt(game_clock_before)
@@ -148,6 +163,7 @@ def _build_backstage_user_content(
         dynamic_block = "\n".join(dynamic_lines)
     else:
         dynamic_block = "(nenhuma descrição dinâmica definida)"
+    facts_block = scene_facts_before.strip() or "(nenhuma ficha de cena ainda)"
     return (
         "### Estado atual (fadiga interna - acrobacia)\n"
         f"Valor motor: {fatigue_before:.1f}/100. Rótulo qualitativo: {label}\n\n"
@@ -164,14 +180,17 @@ def _build_backstage_user_content(
         "### Estado do mundo atual (persistente)\n"
         f"- Itens no saco (stash): {stash_line}\n"
         f"- Descrições dinâmicas por lugar:\n{dynamic_block}\n\n"
+        "### Fichas de cena atuais (fatos físicos para o narrador)\n"
+        f"{facts_block}\n\n"
         "Chame **adjust_backstage_state** com **fatigue_delta** e **game_time_delta_minutes**. Se a narração "
         "não consolidou esforço, falha, manobra ou descanso **na ficção**, e não há sinal físico nos JSONs, "
         "use **fatigue_delta 0**. Se o turno for só troca de frases, esclarecimento ou foco no mesmo instante, "
         "use **game_time_delta_minutes 0** (ou poucos minutos se a prosa indicar pausa curta real).\n\n"
         "Quando houver mudança concreta de objetos no mundo (item pego, roubado, quebrado, consumido, "
         "sumido da cena), chame também **adjust_world_state** no mesmo turno para manter consistência: "
-        "adicione item em `stash_add` e atualize a `description` completa do lugar afetado em "
-        "`place_description_updates`."
+        "adicione item em `stash_add`, atualize a `description` completa do lugar afetado em "
+        "`place_description_updates` e reescreva `scene_facts` para refletir posições e estados "
+        "(mão, chão, stash, vela acesa, etc.)."
     )
 
 
@@ -201,7 +220,7 @@ def _parse_backstage_adjust(arguments_json: str) -> tuple[float, float, str]:
     return float(fd), float(td), reason.strip()
 
 
-def _parse_world_adjust(arguments_json: str) -> tuple[list[str], list[tuple[str, str]], str]:
+def _parse_world_adjust(arguments_json: str) -> tuple[list[str], list[tuple[str, str]], str, str]:
     raw = json.loads(arguments_json) if arguments_json else {}
     if not isinstance(raw, dict):
         raise ValueError("tool arguments must be an object")
@@ -223,10 +242,17 @@ def _parse_world_adjust(arguments_json: str) -> tuple[list[str], list[tuple[str,
             continue
         updates.append((place_name, description))
 
+    scene_facts = raw.get("scene_facts", "")
+    if not isinstance(scene_facts, str):
+        scene_facts = str(scene_facts)
+    scene_facts = scene_facts.strip()
+    if (stash_add or updates) and not scene_facts:
+        raise ValueError("scene_facts must be non-empty when stash_add or place_description_updates is non-empty")
+
     reason = raw.get("reason", "")
     if not isinstance(reason, str):
         reason = str(reason)
-    return stash_add, updates, reason.strip()
+    return stash_add, updates, scene_facts, reason.strip()
 
 
 async def apply_backstage_llm(client: OpenAI, state: GameSessionState, snap: BackstageTurnSnapshot) -> None:
@@ -235,6 +261,7 @@ async def apply_backstage_llm(client: OpenAI, state: GameSessionState, snap: Bac
         game_clock_before = state.game_clock_minutes
         stash_before = tuple(sorted(state.stash_items))
         dynamic_descriptions_before = dict(state.place_dynamic_descriptions)
+        scene_facts_before = state.scene_facts_sheet
 
     user_content = _build_backstage_user_content(
         snap,
@@ -242,6 +269,7 @@ async def apply_backstage_llm(client: OpenAI, state: GameSessionState, snap: Bac
         game_clock_before,
         stash_before,
         dynamic_descriptions_before,
+        scene_facts_before,
     )
     messages: list[ChatCompletionMessageParam] = [
         {"role": "system", "content": backstage_system_prompt()},
@@ -313,7 +341,9 @@ async def apply_backstage_llm(client: OpenAI, state: GameSessionState, snap: Bac
 
                 if tc.function.name == ADJUST_WORLD_TOOL_NAME:
                     try:
-                        stash_add, updates, reason = _parse_world_adjust(str(tc.function.arguments or ""))
+                        stash_add, updates, scene_facts, reason = _parse_world_adjust(
+                            str(tc.function.arguments or "")
+                        )
                     except (json.JSONDecodeError, ValueError) as e:
                         logger.warning("[%s] [backstage_llm] bad world args: %s", _hhmm(), e)
                         continue
@@ -325,7 +355,9 @@ async def apply_backstage_llm(client: OpenAI, state: GameSessionState, snap: Bac
                             prev = state.place_dynamic_descriptions.get(place_name)
                             if prev != description:
                                 changed_places += 1
-                            state.place_dynamic_descriptions[place_name] = description
+                            state.place_dynamic_descriptions[place_name] = _sanitize_model_text(description)
+                        if scene_facts:
+                            state.scene_facts_sheet = _sanitize_model_text(scene_facts)
                         after_stash = len(state.stash_items)
                     tool_calls_executed += 1
                     logger.info(
@@ -333,7 +365,7 @@ async def apply_backstage_llm(client: OpenAI, state: GameSessionState, snap: Bac
                         _hhmm(),
                         after_stash - before_stash,
                         changed_places,
-                        reason[:200],
+                        _sanitize_model_text(reason)[:200],
                     )
                     continue
 

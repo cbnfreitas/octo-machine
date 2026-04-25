@@ -20,6 +20,7 @@ def format_engine_context_for_prompt(
     current_place_name: str | None = None,
     known_place_names: tuple[str, ...] | None = None,
     stash_items: tuple[str, ...] | None = None,
+    scene_facts_sheet: str | None = None,
 ) -> str:
     label = fatigue_label_for_context(fatigue_percent)
     clock = format_game_clock_for_prompt(game_clock_minutes)
@@ -36,6 +37,10 @@ def format_engine_context_for_prompt(
         stash_line = ", ".join(stash_items)
     else:
         stash_line = "(vazio)"
+    if scene_facts_sheet and scene_facts_sheet.strip():
+        facts_block = scene_facts_sheet.strip()
+    else:
+        facts_block = "(ainda sem fichas; use só mapa, narração anterior e intenção do jogador.)"
     return (
         f"{SECTION_ENGINE_CONTEXT}\n"
         "- Fadiga interna (acrobacia), só qualitativa: "
@@ -49,7 +54,9 @@ def format_engine_context_for_prompt(
         "- **Nomes do mapa que o jogador já visitou** (pode tratar como «já vi este cômodo»; "
         "intenção em **primeira pessoa** não deve nomear destinos **fora** desta lista como fato "
         f"que o personagem já conhece): {known_line}\n"
-        f"- **Itens no saco (stash) do jogador:** {stash_line}"
+        f"- **Itens no saco (stash) do jogador:** {stash_line}\n"
+        "- **Fichas de cena (fatos físicos fixados pelo motor):**\n"
+        f"{facts_block}"
     )
 
 
@@ -61,6 +68,7 @@ def build_turn_user_content(
     current_place_name: str | None = None,
     known_place_names: tuple[str, ...] | None = None,
     stash_items: tuple[str, ...] | None = None,
+    scene_facts_sheet: str | None = None,
 ) -> str:
     intent = player_intent.strip()
     ctx = format_engine_context_for_prompt(
@@ -69,5 +77,6 @@ def build_turn_user_content(
         current_place_name=current_place_name,
         known_place_names=known_place_names,
         stash_items=stash_items,
+        scene_facts_sheet=scene_facts_sheet,
     )
     return f"{SECTION_PLAYER_INTENT}\n{intent}\n\n{ctx}"
