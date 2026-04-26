@@ -8,7 +8,7 @@ from typing import Any
 
 from openai.types.chat import ChatCompletionToolUnionParam
 
-from app.config import game_assets_root, get_app_config, prompts_root
+from app.config import AppConfig, game_assets_root, get_app_config, prompts_root
 from app.game_clock import parse_initial_game_time
 from app.feature_flags import scene_images_enabled
 from app.session_state import GameSessionState
@@ -16,6 +16,8 @@ from app.session_state import GameSessionState
 from .invoke import invoke_tool
 
 STARTING_PLACE_NAME = "Cozinha"
+
+DEFAULT_OPENING_PLAYER_LINE = "Vamos começar, onde estou?"
 
 
 def _game_map_json_path() -> Path:
@@ -102,6 +104,28 @@ def get_player_narrative_filters() -> tuple[str, ...]:
         if s:
             out.append(s)
     return tuple(out)
+
+
+def get_opening_player_line_from_map() -> str:
+    raw = _raw_game_document().get("opening_player_line")
+    if isinstance(raw, str) and raw.strip():
+        return raw.strip()
+    return DEFAULT_OPENING_PLAYER_LINE
+
+
+def get_opening_turn_player_intent_text(app_config: AppConfig) -> str:
+    if not app_config.include_opening_player_line:
+        return (
+            "(Opening: no simulated player line. After the fixed intro, anchor the character "
+            "at the initial place only.)"
+        )
+    return get_opening_player_line_from_map()
+
+
+def narrator_opening_turn_reference(app_config: AppConfig) -> str:
+    if not app_config.include_opening_player_line:
+        return "a abertura automática (sem fala simulada do jogador)"
+    return f"«{get_opening_player_line_from_map()}»"
 
 
 def _place_index() -> dict[str, dict[str, Any]]:

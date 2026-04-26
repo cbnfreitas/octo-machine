@@ -6,6 +6,7 @@ from tools.move import (
     get_game_fixed_intro,
     get_narrator_opening_note,
     get_player_narrative_filters,
+    narrator_opening_turn_reference,
 )
 
 
@@ -15,17 +16,18 @@ def fixed_intro_context_section(app_config: AppConfig) -> str:
     fixed = get_game_fixed_intro().strip()
     if not fixed:
         return ""
+    ref = narrator_opening_turn_reference(app_config)
     if app_config.include_tools_move:
         second_reply = (
-            "**Não** repita esse texto na **segunda** mensagem (a que responde à ficha oculta "
-            "«Vamos começar, onde estou?»). Nessa resposta use só `move` para o lugar inicial e narre o que o "
+            f"**Não** repita esse texto na **segunda** mensagem (a que responde à ficha oculta {ref}). "
+            "Nessa resposta use só `move` para o lugar inicial e narre o que o "
             "personagem percebe **neste** espaço, sem reencenar a escalada da janela salvo **no máximo** uma "
             "frase de transição.\n\n"
         )
     else:
         second_reply = (
-            "**Não** repita esse texto na **segunda** mensagem (a que responde à ficha oculta "
-            "«Vamos começar, onde estou?»). Narre o que o personagem percebe **neste** espaço a partir da "
+            f"**Não** repita esse texto na **segunda** mensagem (a que responde à ficha oculta {ref}). "
+            "Narre o que o personagem percebe **neste** espaço a partir da "
             "intro e do system prompt; a tool **`move`** não está disponível — **não** a invoques. "
             "Sem reencenar a escalada da janela salvo **no máximo** uma frase de transição.\n\n"
         )
@@ -48,27 +50,28 @@ def secret_reveal_hard_rule() -> str:
 
 
 def opening_contract_for_narrator(app_config: AppConfig) -> str:
+    ref = narrator_opening_turn_reference(app_config)
     parts = ["O arquivo de mapa do jogo é **%s**." % game_map_basename()]
     if app_config.include_tools_move:
         parts.append(
             (
                 "A **segunda** mensagem do assistente na UI (após a intro fixa, se houver) deve **só** "
-                "responder «onde estou?»: chame `move` para o lugar inicial **%s** nesta jogada inicial e narre "
+                f"tratar da abertura inicial conforme {ref}: chame `move` para o lugar inicial "
+                f"**{STARTING_PLACE_NAME}** nesta jogada inicial e narre "
                 "a partir desse retorno. O texto da **`fixed_intro`** (se existir) está no system prompt **só** "
                 "como contexto: o jogador já leu tudo; **não** volte a colá-lo nem parafrasear por extenso."
             )
-            % STARTING_PLACE_NAME
         )
     else:
         parts.append(
             (
                 "A **segunda** mensagem do assistente na UI (após a intro fixa, se houver) deve **só** "
-                "responder «onde estou?» **sem** usar a tool **`move`** (indisponível). Ancore a narração no "
-                "lugar inicial canônico (**%s**) de forma coerente com o mapa e com a **`fixed_intro`** no "
+                f"tratar da abertura inicial conforme {ref} **sem** usar a tool **`move`** (indisponível). "
+                f"Ancore a narração no lugar inicial canônico (**{STARTING_PLACE_NAME}**) de forma coerente "
+                "com o mapa e com a **`fixed_intro`** no "
                 "system prompt — só como contexto: o jogador já leu tudo; **não** volte a colá-lo nem "
                 "parafrasear por extenso."
             )
-            % STARTING_PLACE_NAME
         )
     note = get_narrator_opening_note()
     if note:

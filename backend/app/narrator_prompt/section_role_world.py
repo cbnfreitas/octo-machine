@@ -4,7 +4,11 @@ from app.narrator_prompt.helpers import (
     player_narrative_filters_section,
     secret_reveal_hard_rule,
 )
-from tools.move import STARTING_PLACE_NAME, load_narrator_system_prompt_sections_rendered
+from tools.move import (
+    STARTING_PLACE_NAME,
+    load_narrator_system_prompt_sections_rendered,
+    narrator_opening_turn_reference,
+)
 
 
 def _canon_block(app_app_config: AppConfig) -> str:
@@ -189,15 +193,16 @@ def _investigacao_block(app_config: AppConfig) -> str:
 
 
 def _after_initial_place(app_config: AppConfig) -> str:
+    ref = narrator_opening_turn_reference(app_config)
     if app_config.include_tools_move:
         return (
-            f"Depois da **narração inicial do lugar** (resposta a «onde estou?», logo após a intro fixa na UI "
+            f"Depois da **narração inicial do lugar** (resposta a {ref}, logo após a intro fixa na UI "
             f"se ela existir), o personagem já está na **{STARTING_PLACE_NAME}** e essa mensagem já cobriu o "
             "equivalente a um `move` para esse lugar—**não** chame `move` de novo para esse lugar até que ele "
             "**saia e volte**.\n\n"
         )
     return (
-        f"Depois da **narração inicial do lugar** (resposta a «onde estou?», logo após a intro fixa na UI "
+        f"Depois da **narração inicial do lugar** (resposta a {ref}, logo após a intro fixa na UI "
         f"se ela existir), trate o personagem como estando na **{STARTING_PLACE_NAME}** em ficção, alinhado "
         "ao mapa; **sem** a tool `move`, mantenha continuidade espacial coerente com o **ENGINE_CONTEXT** "
         "nas jogadas seguintes e **não** reencene a abertura até o jogador pedir ou mudar claramente de "

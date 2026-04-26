@@ -8,7 +8,9 @@ from tools.move import (
     STARTING_PLACE_NAME,
     get_game_fixed_intro,
     get_narrator_opening_note,
+    get_opening_turn_player_intent_text,
     move_to_place,
+    narrator_opening_turn_reference,
 )
 
 OPENING_USER_PLACEHOLDER = "(Sessão iniciada. A abertura já foi narrada ao jogador.)"
@@ -39,13 +41,31 @@ def opening_turn_user_content(
     if n.strip():
         note_block = f"\n### Nota do mapa para a abertura (respeita)\n{n.strip()}\n"
     turn = build_turn_user_content(
-        "Vamos começar, onde estou?",
+        get_opening_turn_player_intent_text(cfg),
         fatigue_percent=fatigue_percent,
         game_clock_minutes=game_clock_minutes,
         current_place_name=None,
         known_place_names=(),
         stash_items=(),
     )
+    if cfg.include_opening_player_line:
+        answer_clause = (
+            f"Responda de forma coerente à fala simulada do jogador {narrator_opening_turn_reference(cfg)} "
+            "em **uma única** mensagem, em PT-BR, obedecendo POV, segredo e "
+            "economia de detalhe do system prompt. **Não duplique** parágrafos. Se a intro fixa já cobriu faca, "
+            "aldrava e entrada pela janela, **não** recomece essa sequência: faça só uma transição curta em prosa "
+            "natural e siga para o que ele nota **neste** cômodo. **Nunca** exponha instruções internas em voz de "
+            "narrador (evite frases metalinguísticas como \"uma frase para ligar...\").\n\n"
+        )
+    else:
+        answer_clause = (
+            "Em **uma única** mensagem, em PT-BR, narre onde o personagem está **agora** após a intro fixa, "
+            "obedecendo POV, segredo e economia de detalhe do system prompt. **Não duplique** parágrafos. "
+            "Se a intro fixa já cobriu faca, aldrava e entrada pela janela, **não** recomece essa sequência: "
+            "faça só uma transição curta em prosa natural e siga para o que ele nota **neste** cômodo. "
+            "**Nunca** exponha instruções internas em voz de narrador (evite frases metalinguísticas como "
+            "\"uma frase para ligar...\").\n\n"
+        )
     if cfg.include_tools_move:
         place_step = (
             f"Antes de narrar onde o personagem está **agora**, chame `move` para o lugar inicial "
@@ -64,11 +84,7 @@ def opening_turn_user_content(
         "Esta é a primeira jogada real da sessão. A **intro fixa** do mapa já foi mostrada ao jogador "
         "(texto literal pela interface) e está no system prompt; **não** a repita. "
         f"{place_step}"
-        "Responda à pergunta «onde estou?» em **uma única** mensagem, em PT-BR, obedecendo POV, segredo e "
-        "economia de detalhe do system prompt. **Não duplique** parágrafos. Se a intro fixa já cobriu faca, "
-        "aldrava e entrada pela janela, **não** recomece essa sequência: faça só uma transição curta em prosa "
-        "natural e siga para o que ele nota **neste** cômodo. **Nunca** exponha instruções internas em voz de "
-        "narrador (evite frases metalinguísticas como \"uma frase para ligar...\").\n\n"
+        f"{answer_clause}"
         f"{note_block}"
     )
 

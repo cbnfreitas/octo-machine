@@ -26,7 +26,9 @@ class AppConfig(BaseModel):
 
     include_fixed_intro_context: bool = False
     include_acrobatics_fatigue_time: bool = False
-    
+
+    include_opening_player_line: bool = True
+
     include_tools_move: bool = False
     include_tools_dice: bool = False
     include_player_agency: bool = False
