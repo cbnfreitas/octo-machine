@@ -17,8 +17,6 @@ class AppConfig(BaseModel):
     narration_initial_max_chars: int = 1000
     narration_followup_max_chars: int = 500
 
-    scene_images_in_chat: bool = False
-
     include_fixed_intro_context: bool = False
     include_acrobatics_fatigue_time: bool = False
     include_role_world_rules: bool = False
@@ -31,6 +29,7 @@ class AppConfig(BaseModel):
     include_pov_rules: bool = False
     include_markdown_emphasis: bool = False
     include_final_checklist_reminder: bool = False
+    scene_images_in_chat: bool = False
 
     @property
     def game_package_root(self) -> Path:
@@ -43,24 +42,6 @@ class AppConfig(BaseModel):
     @property
     def game_scene_images_dir(self) -> Path:
         return self.game_package_root / "imgs"
-
-
-def app_config_with_full_narrator_sections() -> AppConfig:
-    """All narrator sections and tools on; use in tests or legacy-style prompts."""
-    return AppConfig(
-        include_fixed_intro_context=True,
-        include_acrobatics_fatigue_time=True,
-        include_role_world_rules=True,
-        include_tools_move=True,
-        include_tools_dice=True,
-        include_player_agency=True,
-        include_layered_description=True,
-        include_spatial_direction=True,
-        include_response_length_economy=True,
-        include_pov_rules=True,
-        include_markdown_emphasis=True,
-        include_final_checklist_reminder=True,
-    )
 
 
 @lru_cache(maxsize=1)
