@@ -1,8 +1,9 @@
 {
+    "language": "PT-BR",
+    "player_name": "João Aladim",
+    "main_plot": "Num mundo medieval/árabe, o jogador é um ladrão tentando roubar e não ser pego na casa de um velhor rico. ",
     "initial_game_time": "00:00",
     "fixed_intro": "**Você é um ladrão e dos bons**. Sua especialidade é roubar os ricos — \"Não por uma questão de nobreza\", como costuma dizer, \"é que os pobres não têm nada para se roubar!\"\n\nEsta noite você está rondando uma parte da cidade particularmente rica. Você não vem aqui com freqüência; a entrada do bairro é muito bem vigiada. A grande chance surgiu esta noite, quando o vigia casa de um velho rico achou a garrafa de uísque que você deixou para ele. Você entrou furtivamente assim que ele adormeceu.\n\nA noite está esplêndida; a lua brilha quase tão intensamente quanto o sol. Você examina as janelas, enquanto desliza entre as sombras, e logo descobre uma que não está trancada no muro externo da casa. Enfia a lâmina de seu punhal no vão e levanta a aldrava. Em teoria é simples: **roubar o máximo que puder**. O saco que você está carregando deve suportar uns 25kg. Ah, importante, **não ser pego e muito menos morrer!!!**",
-    "player_name": "o ladrão",
-    "main_plot": "Roubar o máximo na casa sem ser pego",
     "player_narrative_filters": ["analfabeto: não revelar nennhuma informação escrita", "glutão: deve passar em um teste de resitência para não comer muito (médio)"],
     "narrator_opening_note": "Mantém coerência com a intro fixa: entrada pela janela até o lugar inicial do mapa. Como referência, a aventura se passa em Córdoba ~1000 d.C. Mas não revelar esse detalhe ao jogador.",
     "regions": [

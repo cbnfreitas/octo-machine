@@ -9,6 +9,11 @@ def game_assets_root() -> Path:
     return Path(__file__).resolve().parent / "game"
 
 
+def prompts_root() -> Path:
+    """Static narrator prompt fragments; sibling of ``tools/`` under ``backend/``."""
+    return Path(__file__).resolve().parent.parent / "prompts"
+
+
 class AppConfig(BaseModel):
     game_folder: str = "uma_noite_de_trabalho"
 

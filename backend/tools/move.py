@@ -8,7 +8,7 @@ from typing import Any
 
 from openai.types.chat import ChatCompletionToolUnionParam
 
-from app.config import game_assets_root, get_app_config
+from app.config import game_assets_root, get_app_config, prompts_root
 from app.game_clock import parse_initial_game_time
 from app.feature_flags import scene_images_enabled
 from app.session_state import GameSessionState
@@ -188,7 +188,7 @@ def _apply_braced_placeholders(template: str, variables: dict[str, str]) -> str:
 
 
 def load_role_world_papel_sections_rendered() -> tuple[str, str]:
-    path = get_app_config().game_package_root / ROLE_WORLD_PAPEL_MARKDOWN_NAME
+    path = prompts_root() / ROLE_WORLD_PAPEL_MARKDOWN_NAME
     if not path.is_file():
         msg = f"Missing narrator papel markdown (expected {path})"
         raise FileNotFoundError(msg)
