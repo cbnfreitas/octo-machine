@@ -4,20 +4,24 @@ from pathlib import Path
 from pydantic import BaseModel
 
 
+def _repo_root() -> Path:
+    return Path(__file__).resolve().parent.parent.parent
+
+
 def game_assets_root() -> Path:
     """Directory served at `/game` (see FastAPI StaticFiles mount)."""
-    return Path(__file__).resolve().parent / "game"
+    return _repo_root() / "games"
 
 
 def prompts_root() -> Path:
-    """Static narrator prompt fragments; sibling of ``tools/`` under ``backend/``."""
-    return Path(__file__).resolve().parent.parent / "prompts"
+    """Static narrator prompt fragments at repo root (sibling of ``backend/``)."""
+    return _repo_root() / "prompts"
 
 
 class AppConfig(BaseModel):
     game_folder: str = "sala_branca"
 
-    # When True, load ``backend/prompts/narrator_system_prompt.md`` as the RPG body; when False, that part is empty.
+    # When True, load ``prompts/narrator_system_prompt.md`` as the RPG body; when False, that part is empty.
     include_narrator_system_prompt_md: bool = True
 
     # When True, send ``game.fixed_intro`` as the first narrator bubble over WebSocket (UI).

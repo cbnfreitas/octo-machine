@@ -70,7 +70,7 @@ def _tool_system_instruction() -> str:
     if scene_images_enabled():
         return (
             f"{base} Na **primeira vez** que o `move` registra a entrada a um lugar **nesta sessão**, "
-            "se existir ilustração em `game/<pacote>/imgs/` (ficheiro `<slug-do-lugar>.png` ou semelhante), "
+            "se existir ilustração em `games/<pacote>/imgs/` (ficheiro `<slug-do-lugar>.png` ou semelhante), "
             "o JSON inclui **`place_scene_image`** com `url` — a interface do jogador "
             "**mostra** essa arte automaticamente; integre a cena na prosa sem contradizer o visual."
         )
