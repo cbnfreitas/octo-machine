@@ -8,15 +8,22 @@ from typing import Any
 
 from openai.types.chat import ChatCompletionToolUnionParam
 
+from app.config import game_assets_root, get_app_config
 from app.game_clock import parse_initial_game_time
 from app.feature_flags import scene_images_enabled
 from app.session_state import GameSessionState
 
 from .invoke import invoke_tool
 
-_GAME_MAP_JSON = Path(__file__).resolve().parent.parent / "app" / "game" / "uma_noite_de_trabalho.json"
-GAME_MAP_BASENAME = _GAME_MAP_JSON.name
 STARTING_PLACE_NAME = "Cozinha"
+
+
+def _game_map_json_path() -> Path:
+    return get_app_config().game.map_json_path()
+
+
+def game_map_basename() -> str:
+    return _game_map_json_path().name
 
 def _tool_system_instruction() -> str:
     base = (
@@ -41,8 +48,8 @@ def _tool_system_instruction() -> str:
     if scene_images_enabled():
         return (
             f"{base} Na **primeira vez** que o `move` registra a entrada a um lugar **nesta sessão**, "
-            "se existir ilustração na pasta do jogo (pasta do mapa, ficheiro `<slug-do-lugar>.png` "
-            "ou semelhante), o JSON inclui **`place_scene_image`** com `url` — a interface do jogador "
+            "se existir ilustração em `game/<pacote>/imgs/` (ficheiro `<slug-do-lugar>.png` ou semelhante), "
+            "o JSON inclui **`place_scene_image`** com `url` — a interface do jogador "
             "**mostra** essa arte automaticamente; integre a cena na prosa sem contradizer o visual."
         )
     return base
@@ -80,7 +87,7 @@ TOOL: ChatCompletionToolUnionParam = {
 
 @lru_cache(maxsize=1)
 def _raw_game_document() -> dict[str, Any]:
-    with _GAME_MAP_JSON.open(encoding="utf-8") as f:
+    with _game_map_json_path().open(encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -157,7 +164,7 @@ def get_initial_game_clock_minutes() -> float:
 
 
 def _game_media_root() -> Path:
-    return _GAME_MAP_JSON.parent / _GAME_MAP_JSON.stem
+    return get_app_config().game.scene_images_dir()
 
 
 def _place_image_slug(place_name: str) -> str:
@@ -193,7 +200,7 @@ def _public_scene_image_path(place_name: str) -> str | None:
     path = _find_scene_image_file(place_name)
     if path is None:
         return None
-    rel = path.relative_to(_GAME_MAP_JSON.parent)
+    rel = path.relative_to(game_assets_root())
     return "/game/" + rel.as_posix()
 
 

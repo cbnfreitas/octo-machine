@@ -1,6 +1,6 @@
 from tools.move import (
-    GAME_MAP_BASENAME,
     STARTING_PLACE_NAME,
+    game_map_basename,
     get_game_fixed_intro,
     get_narrator_opening_note,
     get_player_narrative_filters,
@@ -34,7 +34,7 @@ def secret_reveal_hard_rule() -> str:
 
 def opening_contract_for_narrator() -> str:
     parts = [
-        "O arquivo de mapa do jogo é **%s**." % GAME_MAP_BASENAME,
+        "O arquivo de mapa do jogo é **%s**." % game_map_basename(),
         (
             "A **segunda** mensagem do assistente na UI (após a intro fixa, se houver) deve **só** "
             "responder «onde estou?»: chame `move` para o lugar inicial **%s** nesta jogada inicial e narre "
@@ -56,7 +56,7 @@ def player_narrative_filters_section() -> str:
     lines = "\n".join(f"- {text}" for text in filters)
     return (
         "## Filtros de narração do personagem (mapa; obrigatório)\n\n"
-        f"As linhas abaixo vêm do ficheiro **{GAME_MAP_BASENAME}** e **vinculam cada resposta**: "
+        f"As linhas abaixo vêm do ficheiro **{game_map_basename()}** e **vinculam cada resposta**: "
         "integra-as na prosa em **segunda pessoa**, sem avisar o jogador que são «regras» ou "
         "«filtros».\n\n"
         f"{lines}\n\n"

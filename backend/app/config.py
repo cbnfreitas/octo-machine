@@ -1,6 +1,27 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import BaseModel, Field
+
+
+def game_assets_root() -> Path:
+    """Directory served at `/game` (see FastAPI StaticFiles mount)."""
+    return Path(__file__).resolve().parent / "game"
+
+
+class GameConfig(BaseModel):
+    """Game package under `app/game/<folder_name>/`."""
+
+    folder_name: str = "uma_noite_de_trabalho"
+
+    def package_root(self) -> Path:
+        return game_assets_root() / self.folder_name
+
+    def map_json_path(self) -> Path:
+        return self.package_root() / f"{self.folder_name}.json"
+
+    def scene_images_dir(self) -> Path:
+        return self.package_root() / "imgs"
 
 
 class NarratorPromptConfig(BaseModel):
@@ -27,6 +48,7 @@ class NarratorPromptConfig(BaseModel):
 class AppConfig(BaseModel):
     """Root application settings, split by domain. Extend with new sections as needed."""
 
+    game: GameConfig = Field(default_factory=GameConfig)
     narrator_prompt: NarratorPromptConfig = Field(default_factory=NarratorPromptConfig)
 
 
@@ -37,3 +59,7 @@ def get_app_config() -> AppConfig:
 
 def get_narrator_prompt_config() -> NarratorPromptConfig:
     return get_app_config().narrator_prompt
+
+
+def get_game_config() -> GameConfig:
+    return get_app_config().game

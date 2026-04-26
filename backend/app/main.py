@@ -16,6 +16,7 @@ from openai.types.chat import (
     ChatCompletionMessageFunctionToolCallParam,
     ChatCompletionMessageParam,
 )
+from app.config import game_assets_root
 from app.messaging import build_turn_user_content
 from app.backstage import BackstageTurnSnapshot, apply_backstage_llm
 from app.feature_flags import scene_images_enabled
@@ -34,7 +35,7 @@ from tools.move import (
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-GAME_STATIC_ROOT = Path(__file__).resolve().parent / "game"
+GAME_STATIC_ROOT = game_assets_root()
 load_dotenv(REPO_ROOT / ".env")
 
 API_KEY = os.getenv("OPEN_AI_API_KEY") or os.getenv("OPENAI_API_KEY")
