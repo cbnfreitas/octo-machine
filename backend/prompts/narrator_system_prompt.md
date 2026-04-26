@@ -72,6 +72,9 @@ Se a ação for vaga:
 **MENSAGEM FORA DOS TERMOS DE USO DO JOGO**
 
 
+<<<ENGINE_RULES_BREAK>>>
+
+
 # **ESTILO**
 
 - Linguagem **natural, envolvente e sensorial**

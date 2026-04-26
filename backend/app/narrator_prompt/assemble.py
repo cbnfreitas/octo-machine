@@ -1,5 +1,6 @@
 from app.config import AppConfig
 from app.narrator_prompt.helpers import fixed_intro_context_section
+from tools.move import load_narrator_system_prompt_rendered
 from app.narrator_prompt.section_acrobatics_fatigue import acrobatics_fatigue_time_section
 from app.narrator_prompt.section_layered_description import layered_description_section
 from app.narrator_prompt.section_markdown_formatting import markdown_emphasis_section
@@ -13,6 +14,8 @@ from app.narrator_prompt.section_tools_move import tools_move_section_body
 
 
 def build_rpg_sections(app_config: AppConfig) -> str:
+    if app_config.include_narrator_system_prompt_md:
+        return load_narrator_system_prompt_rendered()
     parts: list[str] = []
     if app_config.include_fixed_intro_context:
         parts.append(fixed_intro_context_section(app_config))

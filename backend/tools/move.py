@@ -158,11 +158,11 @@ def get_narrator_opening_note() -> str:
     return raw.strip()
 
 
-ROLE_WORLD_PAPEL_MARKDOWN_NAME = "role_world_papel.md"
-ROLE_WORLD_PAPEL_ENGINE_ANCHOR = "<<<ENGINE_RULES_BREAK>>>"
+NARRATOR_SYSTEM_PROMPT_MARKDOWN_NAME = "narrator_system_prompt.md"
+NARRATOR_SYSTEM_PROMPT_ENGINE_ANCHOR = "<<<ENGINE_RULES_BREAK>>>"
 
 
-def get_narrator_role_world_template_vars() -> dict[str, str]:
+def get_narrator_system_prompt_template_vars() -> dict[str, str]:
     raw = _raw_game_document()
 
     def scalar(key: str, *, default: str) -> str:
@@ -172,11 +172,13 @@ def get_narrator_role_world_template_vars() -> dict[str, str]:
         return default
 
     return {
+        "language": scalar("language", default="PT-BR"),
         "player_name": scalar("player_name", default="o jogador"),
         "main_plot": scalar(
             "main_plot",
             default="explorar a casa descrita pelo mapa do jogo",
         ),
+        "player_background": scalar("player_background", default=""),
     }
 
 
@@ -187,20 +189,41 @@ def _apply_braced_placeholders(template: str, variables: dict[str, str]) -> str:
     return out
 
 
-def load_role_world_papel_sections_rendered() -> tuple[str, str]:
-    path = prompts_root() / ROLE_WORLD_PAPEL_MARKDOWN_NAME
+def load_narrator_system_prompt_rendered() -> str:
+    path = prompts_root() / NARRATOR_SYSTEM_PROMPT_MARKDOWN_NAME
     if not path.is_file():
-        msg = f"Missing narrator papel markdown (expected {path})"
+        msg = f"Missing narrator system prompt markdown (expected {path})"
         raise FileNotFoundError(msg)
     raw = path.read_text(encoding="utf-8").strip()
     if not raw:
-        msg = f"Empty narrator papel markdown: {path}"
+        msg = f"Empty narrator system prompt markdown: {path}"
         raise ValueError(msg)
-    vars_ = get_narrator_role_world_template_vars()
+    vars_ = get_narrator_system_prompt_template_vars()
     text = _apply_braced_placeholders(raw, vars_)
-    anchor = "\n" + ROLE_WORLD_PAPEL_ENGINE_ANCHOR + "\n"
+    anchor = "\n" + NARRATOR_SYSTEM_PROMPT_ENGINE_ANCHOR + "\n"
+    if anchor in text:
+        before, after = text.split(anchor, 1)
+        text = before.rstrip() + "\n\n" + after.lstrip()
+    return text.strip()
+
+
+def load_narrator_system_prompt_sections_rendered() -> tuple[str, str]:
+    path = prompts_root() / NARRATOR_SYSTEM_PROMPT_MARKDOWN_NAME
+    if not path.is_file():
+        msg = f"Missing narrator system prompt markdown (expected {path})"
+        raise FileNotFoundError(msg)
+    raw = path.read_text(encoding="utf-8").strip()
+    if not raw:
+        msg = f"Empty narrator system prompt markdown: {path}"
+        raise ValueError(msg)
+    vars_ = get_narrator_system_prompt_template_vars()
+    text = _apply_braced_placeholders(raw, vars_)
+    anchor = "\n" + NARRATOR_SYSTEM_PROMPT_ENGINE_ANCHOR + "\n"
     if anchor not in text:
-        msg = f"role_world_papel.md must contain a line {ROLE_WORLD_PAPEL_ENGINE_ANCHOR!r} ({path})"
+        msg = (
+            f"{NARRATOR_SYSTEM_PROMPT_MARKDOWN_NAME} must contain a line "
+            f"{NARRATOR_SYSTEM_PROMPT_ENGINE_ANCHOR!r} when using include_role_world_rules ({path})"
+        )
         raise ValueError(msg)
     before, after = text.split(anchor, 1)
     return before.strip(), after.strip()

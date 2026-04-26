@@ -20,9 +20,11 @@ class AppConfig(BaseModel):
     narration_initial_max_chars: int = 1000
     narration_followup_max_chars: int = 500
 
-    include_role_world_rules: bool = True
+    include_narrator_system_prompt_md: bool = True
 
-    include_fixed_intro_context: bool = True
+    include_role_world_rules: bool = False
+
+    include_fixed_intro_context: bool = False
     include_acrobatics_fatigue_time: bool = False
     
     include_tools_move: bool = False

@@ -1,6 +1,7 @@
 from app.config import AppConfig
 
 FULL_NARRATOR_APP_CONFIG = AppConfig(
+    include_narrator_system_prompt_md=False,
     include_fixed_intro_context=True,
     include_acrobatics_fatigue_time=True,
     include_role_world_rules=True,

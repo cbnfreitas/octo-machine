@@ -75,8 +75,12 @@ def opening_turn_user_content(
 
 def chat_system_content(*, app_config: AppConfig | None = None) -> str:
     cfg = app_config or get_app_config()
-    head = f"{build_rpg_sections(cfg)}\n\n## Referência das ferramentas\n\n"
+    body = build_rpg_sections(cfg)
     tools = combined_tool_instructions(cfg)
+    if tools.strip():
+        head = f"{body}\n\n## Referência das ferramentas\n\n{tools}"
+    else:
+        head = body
     if cfg.include_final_checklist_reminder:
-        return f"{head}{tools}\n\n{final_checklist_reminder_section()}"
-    return f"{head}{tools}"
+        return f"{head}\n\n{final_checklist_reminder_section()}"
+    return head

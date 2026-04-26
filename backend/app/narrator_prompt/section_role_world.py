@@ -4,7 +4,7 @@ from app.narrator_prompt.helpers import (
     player_narrative_filters_section,
     secret_reveal_hard_rule,
 )
-from tools.move import STARTING_PLACE_NAME, load_role_world_papel_sections_rendered
+from tools.move import STARTING_PLACE_NAME, load_narrator_system_prompt_sections_rendered
 
 
 def _canon_block(app_app_config: AppConfig) -> str:
@@ -221,9 +221,8 @@ def _ferramentas_abertura_line(app_config: AppConfig) -> str:
 
 
 def role_world_rules_section(app_config: AppConfig) -> str:
-    """Controlled by ``AppConfig.include_role_world_rules``
-    """
-    papel_intro, papel_tail = load_role_world_papel_sections_rendered()
+    """Requires ``narrator_system_prompt.md`` with ``<<<ENGINE_RULES_BREAK>>>``; gated by ``include_role_world_rules``."""
+    papel_intro, papel_tail = load_narrator_system_prompt_sections_rendered()
     return (
         "## Papel\n\n"
         f"**{secret_reveal_hard_rule()}**\n\n"
