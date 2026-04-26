@@ -17,18 +17,36 @@ class NarratorPromptConfig(BaseModel):
 
     scene_images_in_chat: bool = False
 
-    include_fixed_intro_context: bool = True
-    include_acrobatics_fatigue_time: bool = True
-    include_role_world_rules: bool = True
-    include_tools_move: bool = True
-    include_tools_dice: bool = True
-    include_player_agency: bool = True
-    include_layered_description: bool = True
-    include_spatial_direction: bool = True
-    include_response_length_economy: bool = True
-    include_pov_rules: bool = True
-    include_markdown_emphasis: bool = True
-    include_final_checklist_reminder: bool = True
+    include_fixed_intro_context: bool = False
+    include_acrobatics_fatigue_time: bool = False
+    include_role_world_rules: bool = False
+    include_tools_move: bool = False
+    include_tools_dice: bool = False
+    include_player_agency: bool = False
+    include_layered_description: bool = False
+    include_spatial_direction: bool = False
+    include_response_length_economy: bool = False
+    include_pov_rules: bool = False
+    include_markdown_emphasis: bool = False
+    include_final_checklist_reminder: bool = False
+
+
+def narrator_prompt_all_sections_enabled() -> NarratorPromptConfig:
+    """Full narrator prompt (all sections and tools on). Use in tests or when comparing to legacy behavior."""
+    return NarratorPromptConfig(
+        include_fixed_intro_context=True,
+        include_acrobatics_fatigue_time=True,
+        include_role_world_rules=True,
+        include_tools_move=True,
+        include_tools_dice=True,
+        include_player_agency=True,
+        include_layered_description=True,
+        include_spatial_direction=True,
+        include_response_length_economy=True,
+        include_pov_rules=True,
+        include_markdown_emphasis=True,
+        include_final_checklist_reminder=True,
+    )
 
 
 class AppConfig(BaseModel):
