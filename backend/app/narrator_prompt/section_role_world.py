@@ -4,57 +4,7 @@ from app.narrator_prompt.helpers import (
     player_narrative_filters_section,
     secret_reveal_hard_rule,
 )
-from tools.move import (
-    STARTING_PLACE_NAME,
-    load_narrator_system_prompt_sections_rendered,
-    narrator_opening_turn_reference,
-)
-
-
-def _canon_block(app_app_config: AppConfig) -> str:
-    if app_app_config.include_tools_move:
-        return (
-            "**Cânone do cenário (obrigatório):** Tudo o que você **afirma como fato** sobre o imóvel, os "
-            "cômodos, ligações entre espaços, materiais, dimensões, presença ou ausência de objetos fixos, "
-            "janelas, portas e iluminação deve vir **exclusivamente** do **`move`** **e**, quando listados "
-            "para o **lugar atual**, das **camadas extra** opcionais no **ENGINE_CONTEXT** (perceptível com "
-            "inspeção e referência de autoria; mesmo texto do mapa, não é invenção tua). "
-            "**`basic_description`** no JSON do `move` é a impressão principal e, com **`revisit`: false**, "
-            "é a **única** camada de sítio **naquele** JSON; o motor pode **omitir** **`details`** ali até "
-            "uma revisita. **Mesmo assim**, se o **ENGINE_CONTEXT** trouxer a **camada extra perceptível** "
-            "do lugar onde o personagem **está agora**, podes **sustentar** fatos visíveis de perto "
-            "(mesa, bancada, canto) **a partir dela** quando o jogador **aproxima, examina ou pergunta com "
-            "foco** nesse ponto, **sem** reabrir a descrição inteira da chegada. Com **`revisit`: true**, o "
-            "JSON do `move` inclui **`details`**; integra o que fizer sentido. O **`description_full`** na "
-            "primeira visita coincide com `basic_description`; em revisit junta as duas camadas "
-            "filtradas. Só invoca trechos ainda omitidos quando a descoberta for merecida. "
-            "**Não invente absolutamente nenhum fato** sobre o "
-            "ambiente que não esteja **explicitamente** sustentado por esse texto: sem móveis, pessoas, "
-            "criaturas, sons, cheiros ou detalhes arquitetônicos extras; **não** contradiga o mapa (por "
-            "exemplo, cômodos descritos como vazios permanecem vazios salvo o jogador introduzir algo por "
-            "ação própria, sem acrescentar elementos fixos inexistentes na descrição). Além disso, o bloco "
-            "**Fichas de cena** no **ENGINE_CONTEXT** fixa posse e posição de objetos móveis (saco, vela, "
-            "itens no chão) até o motor atualizar: **obedeça estritamente** e **não** contradiga.\n\n"
-        )
-    return (
-        "**Cânone do cenário (obrigatório):** Nesta configuração **não** há JSON da tool **`move`**. Tudo o "
-        "que você **afirma como fato** sobre o imóvel, os cômodos, ligações entre espaços, materiais, "
-        "dimensões, presença ou ausência de objetos fixos, janelas, portas e iluminação deve vir "
-        "**exclusivamente** do **ENGINE_CONTEXT** (incluindo camadas perceptíveis e texto de apoio do mapa "
-        "para o **lugar atual**), da **intro fixa** e do material do mapa já presente no system prompt — "
-        "**não** é invenção tua. **Mesmo assim**, se o **ENGINE_CONTEXT** trouxer a **camada extra "
-        "perceptível** do lugar onde o personagem **está agora**, podes **sustentar** fatos visíveis de perto "
-        "(mesa, bancada, canto) **a partir dela** quando o jogador **aproxima, examina ou pergunta com foco** "
-        "nesse ponto, **sem** reabrir a descrição inteira da chegada. O motor pode marcar **revisit** ou "
-        "camadas extras no contexto; integra o que fizer sentido quando esse material estiver disponível. "
-        "Só invoca trechos ainda omitidos quando a descoberta for merecida. **Não invente absolutamente "
-        "nenhum fato** sobre o ambiente que não esteja **explicitamente** sustentado por esse texto: sem "
-        "móveis, pessoas, criaturas, sons, cheiros ou detalhes arquitetônicos extras; **não** contradiga o "
-        "mapa (por exemplo, cômodos descritos como vazios permanecem vazios salvo o jogador introduzir algo "
-        "por ação própria, sem acrescentar elementos fixos inexistentes na descrição). Além disso, o bloco "
-        "**Fichas de cena** no **ENGINE_CONTEXT** fixa posse e posição de objetos móveis (saco, vela, itens no "
-        "chão) até o motor atualizar: **obedeça estritamente** e **não** contradiga.\n\n"
-    )
+from tools.move import load_narrator_system_prompt_sections_rendered
 
 
 def _secrets_discovery_block(app_config: AppConfig) -> str:
@@ -192,24 +142,6 @@ def _investigacao_block(app_config: AppConfig) -> str:
     )
 
 
-def _after_initial_place(app_config: AppConfig) -> str:
-    ref = narrator_opening_turn_reference(app_config)
-    if app_config.include_tools_move:
-        return (
-            f"Depois da **narração inicial do lugar** (resposta a {ref}, logo após a intro fixa na UI "
-            f"se ela existir), o personagem já está na **{STARTING_PLACE_NAME}** e essa mensagem já cobriu o "
-            "equivalente a um `move` para esse lugar—**não** chame `move` de novo para esse lugar até que ele "
-            "**saia e volte**.\n\n"
-        )
-    return (
-        f"Depois da **narração inicial do lugar** (resposta a {ref}, logo após a intro fixa na UI "
-        f"se ela existir), trate o personagem como estando na **{STARTING_PLACE_NAME}** em ficção, alinhado "
-        "ao mapa; **sem** a tool `move`, mantenha continuidade espacial coerente com o **ENGINE_CONTEXT** "
-        "nas jogadas seguintes e **não** reencene a abertura até o jogador pedir ou mudar claramente de "
-        "lugar na narrativa.\n\n"
-    )
-
-
 def _ferramentas_abertura_line(app_config: AppConfig) -> str:
     if app_config.include_tools_move or app_config.include_tools_dice:
         return (
@@ -234,13 +166,11 @@ def role_world_rules_section(app_config: AppConfig) -> str:
         f"{player_narrative_filters_section()}"
         f"{papel_intro}\n\n"
         f"{opening_contract_for_narrator(app_config)}\n\n"
-        f"{_canon_block(app_config)}"
         f"{_secrets_discovery_block(app_config)}"
         f"{_camada_details_block(app_config)}"
         f"{_conexoes_ocultos_block(app_config)}"
         f"{_roll_dice_falha_block(app_config)}"
         f"{_investigacao_block(app_config)}"
-        f"{_after_initial_place(app_config)}"
         f"{_ferramentas_abertura_line(app_config)}"
         f"{papel_tail}\n\n"
     )

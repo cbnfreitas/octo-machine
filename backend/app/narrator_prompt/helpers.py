@@ -1,63 +1,14 @@
 from app.config import AppConfig
 
 from tools.move import (
-    STARTING_PLACE_NAME,
     fixed_intro_ui_enabled,
     game_map_basename,
-    get_game_fixed_intro,
     get_narrator_opening_note,
     get_player_narrative_filters,
+    get_starting_place_name,
+    has_spatial_map,
     narrator_opening_turn_reference,
 )
-
-
-def fixed_intro_context_section(app_config: AppConfig) -> str:
-    """Controlled by ``AppConfig.include_fixed_intro_context``
-    """
-    fixed = get_game_fixed_intro().strip()
-    if not fixed:
-        return ""
-    ref = narrator_opening_turn_reference(app_config)
-    intro_shown = fixed_intro_ui_enabled(app_config)
-    if app_config.include_tools_move:
-        if intro_shown:
-            second_reply = (
-                f"**Não** repita esse texto na **segunda** mensagem (a que responde à ficha oculta {ref}). "
-                "Nessa resposta use só `move` para o lugar inicial e narre o que o "
-                "personagem percebe **neste** espaço, sem reencenar a escalada da janela salvo **no máximo** uma "
-                "frase de transição.\n\n"
-            )
-        else:
-            second_reply = (
-                f"**Não** repita esse texto na íntegra na **primeira** mensagem gerada para a UI (a que responde à "
-                f"ficha oculta {ref}). Nessa resposta use só `move` para o lugar inicial e narre o que o "
-                "personagem percebe **neste** espaço.\n\n"
-            )
-    else:
-        if intro_shown:
-            second_reply = (
-                f"**Não** repita esse texto na **segunda** mensagem (a que responde à ficha oculta {ref}). "
-                "Narre o que o personagem percebe **neste** espaço a partir da "
-                "intro e do system prompt; a tool **`move`** não está disponível — **não** a invoques. "
-                "Sem reencenar a escalada da janela salvo **no máximo** uma frase de transição.\n\n"
-            )
-        else:
-            second_reply = (
-                f"**Não** repita esse texto na íntegra na **primeira** mensagem gerada para a UI (a que responde à "
-                f"ficha oculta {ref}). Narre o que o personagem percebe **neste** espaço a partir do system prompt; "
-                "a tool **`move`** não está disponível — **não** a invoques.\n\n"
-            )
-    heading = (
-        "## Intro fixa (já exibida ao jogador, texto literal)\n\n"
-        if intro_shown
-        else "## Intro fixa (texto do mapa; contexto no prompt)\n\n"
-    )
-    ui_line = (
-        "A interface enviou o bloco acima como **primeira** mensagem da narradora, **sem alterações**. "
-        if intro_shown
-        else "Este bloco **não** foi enviado como bolha separada na interface; consta **só** aqui como contexto. "
-    )
-    return f"{heading}{fixed}\n\n{ui_line}{second_reply}"
 
 
 def secret_reveal_hard_rule() -> str:
@@ -73,14 +24,16 @@ def secret_reveal_hard_rule() -> str:
 def opening_contract_for_narrator(app_config: AppConfig) -> str:
     ref = narrator_opening_turn_reference(app_config)
     intro_shown = fixed_intro_ui_enabled(app_config)
+    start = get_starting_place_name()
     parts = ["O arquivo de mapa do jogo é **%s**." % game_map_basename()]
     if app_config.include_tools_move:
+        label = start or "(defina starting_place_name ou um mapa espacial no JSON)"
         if intro_shown:
             parts.append(
                 (
                     "A **segunda** mensagem do assistente na UI (após a intro fixa) deve **só** "
                     f"tratar da abertura inicial conforme {ref}: chame `move` para o lugar inicial "
-                    f"**{STARTING_PLACE_NAME}** nesta jogada inicial e narre "
+                    f"**{label}** nesta jogada inicial e narre "
                     "a partir desse retorno. O texto da **`fixed_intro`** (se existir) está no system prompt **só** "
                     "como contexto: o jogador já leu tudo; **não** volte a colá-lo nem parafrasear por extenso."
                 )
@@ -89,19 +42,27 @@ def opening_contract_for_narrator(app_config: AppConfig) -> str:
             parts.append(
                 (
                     "A **primeira** mensagem do assistente na UI deve **só** tratar da abertura inicial conforme "
-                    f"{ref}: chame `move` para o lugar inicial **{STARTING_PLACE_NAME}** nesta jogada inicial e narre "
+                    f"{ref}: chame `move` para o lugar inicial **{label}** nesta jogada inicial e narre "
                     "a partir desse retorno. Se existir **`fixed_intro`** no mapa, funde o necessário na prosa sem "
                     "colar o parágrafo inteiro nem assumir que o jogador já viu esse texto na interface."
                 )
             )
     else:
+        if has_spatial_map() and start:
+            place_phrase = f"no lugar inicial canônico do mapa (**{start}**)"
+        elif has_spatial_map():
+            place_phrase = "no estado inicial coerente com o mapa"
+        else:
+            place_phrase = (
+                "no espaço inicial descrito na **`fixed_intro`** e no **main_plot**, sem inventar cômodos que "
+                "não constem desse material"
+            )
         if intro_shown:
             parts.append(
                 (
                     "A **segunda** mensagem do assistente na UI (após a intro fixa) deve **só** "
                     f"tratar da abertura inicial conforme {ref} **sem** usar a tool **`move`** (indisponível). "
-                    f"Ancore a narração no lugar inicial canônico (**{STARTING_PLACE_NAME}**) de forma coerente "
-                    "com o mapa e com a **`fixed_intro`** no "
+                    f"Ancore a narração {place_phrase} e com a **`fixed_intro`** no "
                     "system prompt — só como contexto: o jogador já leu tudo; **não** volte a colá-lo nem "
                     "parafrasear por extenso."
                 )
@@ -110,8 +71,8 @@ def opening_contract_for_narrator(app_config: AppConfig) -> str:
             parts.append(
                 (
                     "A **primeira** mensagem do assistente na UI deve **só** tratar da abertura inicial conforme "
-                    f"{ref} **sem** usar a tool **`move`** (indisponível). Ancore a narração no lugar inicial "
-                    f"canônico (**{STARTING_PLACE_NAME}**) de forma coerente com o mapa. Se existir **`fixed_intro`** "
+                    f"{ref} **sem** usar a tool **`move`** (indisponível). Ancore a narração {place_phrase}. "
+                    "Se existir **`fixed_intro`** "
                     "no mapa, funde o necessário na prosa sem colar o parágrafo inteiro nem assumir que o jogador já "
                     "viu esse texto na interface."
                 )

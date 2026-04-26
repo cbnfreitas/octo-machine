@@ -15,9 +15,29 @@ from app.session_state import GameSessionState
 
 from .invoke import invoke_tool
 
-STARTING_PLACE_NAME = "Cozinha"
 
-DEFAULT_OPENING_PLAYER_LINE = "Vamos começar, onde estou?"
+def has_spatial_map() -> bool:
+    data = _raw_game_document()
+    raw_regions = data.get("regions")
+    raw_places = data.get("places")
+    if isinstance(raw_regions, list) and any(isinstance(x, dict) for x in raw_regions):
+        return True
+    if isinstance(raw_places, list) and any(isinstance(x, dict) for x in raw_places):
+        return True
+    return False
+
+
+def get_starting_place_name() -> str | None:
+    raw = _raw_game_document()
+    explicit = raw.get("starting_place_name")
+    if isinstance(explicit, str) and explicit.strip():
+        return explicit.strip()
+    if not has_spatial_map():
+        return None
+    index = _place_index()
+    if not index:
+        return None
+    return next(iter(index))
 
 
 def _game_map_json_path() -> Path:
@@ -113,7 +133,7 @@ def get_opening_player_line_from_map() -> str:
     raw_hidden = _raw_game_document().get("hidden_first_player_message")
     if isinstance(raw_hidden, str) and raw_hidden.strip():
         return raw_hidden.strip()
-    return DEFAULT_OPENING_PLAYER_LINE
+    return ""
 
 
 def get_opening_turn_player_intent_text(app_config: AppConfig) -> str:
@@ -454,6 +474,8 @@ def place_details_for_engine_context(
     """
     Details layer for the narrator ENGINE_CONTEXT: (perceptible prose, raw authoring including secrets).
     """
+    if not has_spatial_map():
+        return "", ""
     index = _place_index()
     entry = index.get(place_name.strip())
     if entry is None:

@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
 
@@ -98,7 +99,26 @@ def _streamed_tool_calls_are_complete(tool_calls_list: list[dict[str, object]]) 
     return True
 
 
-app = FastAPI(title="Octo Chat")
+def _log_assembled_narrator_system_prompt() -> None:
+    cfg = get_app_config()
+    text = chat_system_content(app_config=cfg)
+    sep = "=" * 80
+    logger.info("%s", sep)
+    logger.info(
+        "[narrator] System prompt as assembled for this process (%d Unicode chars)",
+        len(text),
+    )
+    logger.info("%s", text)
+    logger.info("%s", sep)
+
+
+@asynccontextmanager
+async def _app_lifespan(_: FastAPI):
+    _log_assembled_narrator_system_prompt()
+    yield
+
+
+app = FastAPI(title="Octo Chat", lifespan=_app_lifespan)
 
 app.add_middleware(
     CORSMiddleware,
