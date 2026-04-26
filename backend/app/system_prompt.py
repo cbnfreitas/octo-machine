@@ -27,7 +27,13 @@ def fallback_opening_message(*, session_state: GameSessionState | None = None) -
     )
 
 
-def opening_turn_user_content(*, fatigue_percent: float = 0.0, game_clock_minutes: float = 0.0) -> str:
+def opening_turn_user_content(
+    *,
+    fatigue_percent: float = 0.0,
+    game_clock_minutes: float = 0.0,
+    narrator_config: NarratorPromptConfig | None = None,
+) -> str:
+    cfg = narrator_config or get_narrator_prompt_config()
     note_block = ""
     n = get_narrator_opening_note()
     if n.strip():
@@ -40,13 +46,24 @@ def opening_turn_user_content(*, fatigue_percent: float = 0.0, game_clock_minute
         known_place_names=(),
         stash_items=(),
     )
+    if cfg.include_tools_move:
+        place_step = (
+            f"Antes de narrar onde o personagem está **agora**, chame `move` para o lugar inicial "
+            f"**{STARTING_PLACE_NAME}** e use o resultado como base factual da cena. "
+        )
+    else:
+        place_step = (
+            "Narra onde o personagem está **agora** com base na **intro fixa** (se existir) e no system "
+            "prompt. A tool **`move`** não está disponível nesta configuração: **não** a invoques. Ancore a "
+            "cena no estado inicial coerente com o mapa (lugar inicial canônico: "
+            f"**{STARTING_PLACE_NAME}**), sem inventar fatos nem contradizer o texto de apoio. "
+        )
     return (
         f"{turn}\n\n"
         "### Instrução (início de sessão)\n\n"
         "Esta é a primeira jogada real da sessão. A **intro fixa** do mapa já foi mostrada ao jogador "
         "(texto literal pela interface) e está no system prompt; **não** a repita. "
-        f"Antes de narrar onde o personagem está **agora**, chame `move` para o lugar inicial "
-        f"**{STARTING_PLACE_NAME}** e use o resultado como base factual da cena. "
+        f"{place_step}"
         "Responda à pergunta «onde estou?» em **uma única** mensagem, em PT-BR, obedecendo POV, segredo e "
         "economia de detalhe do system prompt. **Não duplique** parágrafos. Se a intro fixa já cobriu faca, "
         "aldrava e entrada pela janela, **não** recomece essa sequência: faça só uma transição curta em prosa "
@@ -59,7 +76,7 @@ def opening_turn_user_content(*, fatigue_percent: float = 0.0, game_clock_minute
 def chat_system_content(*, narrator_config: NarratorPromptConfig | None = None) -> str:
     cfg = narrator_config or get_narrator_prompt_config()
     head = f"{build_rpg_sections(cfg)}\n\n## Referência das ferramentas\n\n"
-    tools = combined_tool_instructions()
+    tools = combined_tool_instructions(cfg)
     if cfg.include_final_checklist_reminder:
         return f"{head}{tools}\n\n{final_checklist_reminder_section()}"
     return f"{head}{tools}"

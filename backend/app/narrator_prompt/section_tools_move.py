@@ -3,10 +3,9 @@ from app.narrator_prompt.section_scene_image_note import scene_image_instruction
 from tools.move import STARTING_PLACE_NAME
 
 
-def tools_move_and_dice_section(config: NarratorPromptConfig) -> str:
+def tools_move_section_body(config: NarratorPromptConfig) -> str:
     scene_image_note = scene_image_instruction_paragraph(config)
     return (
-        "## Ferramentas\n\n"
         "Use **`move`** quando o jogador **for para outro lugar** do mapa (não para o lugar inicial "
         f"**{STARTING_PLACE_NAME}** enquanto ele não tiver saído dele): em `place_name` use o **nome "
         "canônico** do mapa. O jogador fala em linguagem natural («volto pro salão grande», «sala principal»): "
@@ -52,39 +51,6 @@ def tools_move_and_dice_section(config: NarratorPromptConfig) -> str:
         "descreva **só** isso. Em revisit, evite repetir caminho óbvio no texto e foque no que importa "
         "**neste** turno. Quando o jogador **não mudou de cômodo** entre as suas respostas (só nova "
         "intenção no mesmo lugar), **não** recarregue o cenário inteiro: continue no fio do que já "
-        "estava estabelecido.\n\n"
+        f"estava estabelecido.\n\n"
         f"{scene_image_note}\n\n"
-        "Use **`roll_dice`** quando uma ação do jogador precise de sorte (teste, disputa, risco, "
-        "oposição, **acrobacia ou esforço físico incerto**): envie **`skill`** (texto livre que descreve a "
-        "manobra) e **`difficulty`** (`muito_facil`, `facil`, `medio`, `dificil`, `muito_dificil`) coerente "
-        "com a dificuldade que você já estabeleceu na cena. A ferramenta devolve falha crítica, falha, "
-        "sucesso ou sucesso crítico (sorteio d100). **Chame a tool neste mesmo turno** antes de narrar o "
-        "desfecho físico quando o jogador já deu um gesto minimamente concreto (ex.: \"acrobacia simples\", "
-        "\"salto até à janela\"). Só responda **sem** `roll_dice` se, objetivamente, faltar um dado "
-        "indispensável ao corpo (ex.: direção, alvo) e uma **única** pergunta neutra for inevitável. "
-        "Para números em intervalo ou cara/coroa isolados, use as outras ferramentas. Integre qualquer "
-        "resultado ao que você narrar em seguida. Em **falha** de busca ampla ou de percepção, aplica a "
-        "regra **«`roll_dice` em falha»** acima: **não** confirmes segredos nem eco o `skill`.\n\n"
-        "**Fadiga perceptível na prosa:** só descreva cansaço físico quando houve esforço realmente "
-        "relevante na ficção (corrida, luta, salto, escalada, carga pesada por tempo, posição muito "
-        "incômoda por período, **ou comer demais** já concretizado na narração: sensação de peso, "
-        "arrepio de digestão, falta de fôlego ao mover-se depressa, vontade de parar). Deslocamentos "
-        "curtos entre cômodos e ações triviais **não** devem gerar frases de exaustão.\n\n"
-        "**Dificuldade para percepção/investigação (seguir sugestão):** use `muito_facil`/`facil` apenas "
-        "quando a ação for **muito específica** e o alvo estiver próximo/atingível; `medio` para varredura "
-        "focada com incerteza real; `dificil` quando houver pouco tempo, baixa luz, ruído, distração, "
-        "obstruções ou pista muito sutil; `muito_dificil` para pistas mínimas em cenário hostil. "
-        "«Vasculhar tudo» ou vários barris/armários de uma vez: **no mínimo** `medio`, mesmo que o texto "
-        "do `skill` cite uma suspeita do jogador. Se a ação for direta no ponto certo, você pode resolver "
-        "sem teste.\n\n"
-        "**`difficulty` em `roll_dice` (obrigatório ser honesto com o risco):** `muito_facil` e "
-        "`facil` são só para gestos **objetivamente triviais** no contexto (passo curto, apoio sólido, "
-        "quase zero risco de queda feia). **Nunca** use `facil` nem `muito_facil` para **giro mortal**, "
-        "**mortal para trás**, **salto com rotação completa**, **voltas no ar**, equilíbrio arriscado em "
-        "móveis ou chão irregular com pressão (furtividade, pressa, feridas leves) - isso é no mínimo "
-        "**`medio`**, e em ambiente hostil ou fadiga já ruim no ENGINE_CONTEXT sobe para **`dificil`** ou "
-        "**`muito_dificil`**. `medio`: atlético sério, risco moderado (cambalhota exigente, salto com "
-        "pouso apertado). `dificil`: mortal ou equivalente, precisão alta, ou corpo já cansado. "
-        "`muito_dificil`: perigo extremo, exaustão forte, ou superfície/armadilha que torna a manobra "
-        "quase suicida.\n\n"
     )

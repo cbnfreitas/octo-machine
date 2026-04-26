@@ -15,8 +15,9 @@ from openai.types.chat import (
     ChatCompletionAssistantMessageParam,
     ChatCompletionMessageFunctionToolCallParam,
     ChatCompletionMessageParam,
+    ChatCompletionToolUnionParam,
 )
-from app.config import game_assets_root
+from app.config import game_assets_root, get_narrator_prompt_config
 from app.messaging import build_turn_user_content
 from app.backstage import BackstageTurnSnapshot, apply_backstage_llm
 from app.feature_flags import scene_images_enabled
@@ -27,7 +28,7 @@ from app.system_prompt import (
     fallback_opening_message,
     opening_turn_user_content,
 )
-from tools import TOOLS, run_tool
+from tools import narrator_tools, run_tool
 from tools.move import (
     get_game_fixed_intro,
     get_initial_game_clock_minutes,
@@ -116,22 +117,23 @@ async def _stream_model_round(
     messages: list[ChatCompletionMessageParam],
     *,
     forward_tokens: bool = True,
-    use_tools: bool = True,
+    openai_tools: list[ChatCompletionToolUnionParam],
     buffer_tokens_until_tool_round_complete: bool = False,
 ) -> tuple[str, bool, list[ChatCompletionMessageFunctionToolCallParam], int, list[str]]:
     """
     One streamed completion. Forwards text deltas to the client when forward_tokens is True.
     Returns (full_text, has_tool_calls, typed_calls, forwarded_token_events, pending_token_chunks).
     When has_tool_calls is True, typed_calls must be executed and the conversation continued.
-    If buffer_tokens_until_tool_round_complete and use_tools, content deltas are held in
+    If buffer_tokens_until_tool_round_complete and openai_tools is non-empty, content deltas are held in
     pending_token_chunks until the caller runs tools and scene_image, then the caller must
     forward them — so narration does not appear before move + scene_image in the same turn.
     """
+    use_tools = len(openai_tools) > 0
     if use_tools:
         stream = client.chat.completions.create(
             model=MODEL,
             messages=messages,
-            tools=TOOLS,
+            tools=openai_tools,
             stream=True,
             stream_options={"include_usage": True},
         )
@@ -234,14 +236,17 @@ async def chat(ws: WebSocket):
         return
 
     client = OpenAI(api_key=API_KEY)
+    narr_prompt_cfg = get_narrator_prompt_config()
+    narrator_openai_tools = narrator_tools(narr_prompt_cfg)
     session_state = GameSessionState(initial_game_clock_minutes=get_initial_game_clock_minutes())
     messages: list[ChatCompletionMessageParam] = [
-        {"role": "system", "content": chat_system_content()},
+        {"role": "system", "content": chat_system_content(narrator_config=narr_prompt_cfg)},
         {
             "role": "user",
             "content": opening_turn_user_content(
                 fatigue_percent=session_state.fatigue_percent,
                 game_clock_minutes=session_state.game_clock_minutes,
+                narrator_config=narr_prompt_cfg,
             ),
         },
     ]
@@ -264,6 +269,7 @@ async def chat(ws: WebSocket):
                         client,
                         ws,
                         messages,
+                        openai_tools=narrator_openai_tools,
                     )
                 )
                 opening_forwarded_tokens += round_forwarded
@@ -384,6 +390,7 @@ async def chat(ws: WebSocket):
                             client,
                             ws,
                             messages,
+                            openai_tools=narrator_openai_tools,
                         )
                     )
 

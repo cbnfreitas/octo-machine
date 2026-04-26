@@ -2,6 +2,7 @@ import json
 
 from openai.types.chat import ChatCompletionToolUnionParam
 
+from app.config import NarratorPromptConfig
 from app.session_state import GameSessionState
 
 from .roll_dice import TOOL as ROLL_DICE_TOOL
@@ -24,11 +25,24 @@ _TOOL_SPECS: list[tuple[str, ChatCompletionToolUnionParam, str]] = [
     ("toss_coin", TOSS_COIN_TOOL, TOSS_COIN_INSTRUCTION),
 ]
 
-TOOLS: list[ChatCompletionToolUnionParam] = [spec[1] for spec in _TOOL_SPECS]
+
+def _active_narrator_tool_specs(prompt_cfg: NarratorPromptConfig) -> list[tuple[str, ChatCompletionToolUnionParam, str]]:
+    out: list[tuple[str, ChatCompletionToolUnionParam, str]] = []
+    for name, tool, instr in _TOOL_SPECS:
+        if name == "move" and not prompt_cfg.include_tools_move:
+            continue
+        if name == "roll_dice" and not prompt_cfg.include_tools_dice:
+            continue
+        out.append((name, tool, instr))
+    return out
 
 
-def combined_tool_instructions() -> str:
-    return "\n\n".join(spec[2] for spec in _TOOL_SPECS)
+def narrator_tools(prompt_cfg: NarratorPromptConfig) -> list[ChatCompletionToolUnionParam]:
+    return [spec[1] for spec in _active_narrator_tool_specs(prompt_cfg)]
+
+
+def combined_tool_instructions(prompt_cfg: NarratorPromptConfig) -> str:
+    return "\n\n".join(spec[2] for spec in _active_narrator_tool_specs(prompt_cfg))
 
 
 async def run_tool(

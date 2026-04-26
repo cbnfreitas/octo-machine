@@ -20,7 +20,8 @@ class NarratorPromptConfig(BaseModel):
     include_fixed_intro_context: bool = True
     include_acrobatics_fatigue_time: bool = True
     include_role_world_rules: bool = True
-    include_tools_move_and_dice: bool = True
+    include_tools_move: bool = True
+    include_tools_dice: bool = True
     include_player_agency: bool = True
     include_layered_description: bool = True
     include_spatial_direction: bool = True

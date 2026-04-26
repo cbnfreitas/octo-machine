@@ -1,3 +1,4 @@
+from app.config import NarratorPromptConfig
 from app.narrator_prompt.helpers import (
     opening_contract_for_narrator,
     player_narrative_filters_section,
@@ -6,7 +7,22 @@ from app.narrator_prompt.helpers import (
 from tools.move import STARTING_PLACE_NAME
 
 
-def role_world_rules_section() -> str:
+def role_world_rules_section(config: NarratorPromptConfig) -> str:
+    if config.include_tools_move:
+        after_initial_place = (
+            f"Depois da **narração inicial do lugar** (resposta a «onde estou?», logo após a intro fixa na UI "
+            f"se ela existir), o personagem já está na **{STARTING_PLACE_NAME}** e essa mensagem já cobriu o "
+            "equivalente a um `move` para esse lugar—**não** chame `move` de novo para esse lugar até que ele "
+            "**saia e volte**.\n\n"
+        )
+    else:
+        after_initial_place = (
+            f"Depois da **narração inicial do lugar** (resposta a «onde estou?», logo após a intro fixa na UI "
+            f"se ela existir), trate o personagem como estando na **{STARTING_PLACE_NAME}** em ficção, alinhado "
+            "ao mapa; **sem** a tool `move`, mantenha continuidade espacial coerente com o **ENGINE_CONTEXT** "
+            "nas jogadas seguintes e **não** reencene a abertura até o jogador pedir ou mudar claramente de "
+            "lugar na narrativa.\n\n"
+        )
     return (
         "## Papel\n\n"
         f"**{secret_reveal_hard_rule()}**\n\n"
@@ -19,7 +35,7 @@ def role_world_rules_section() -> str:
         "exagerar melodrama em cada frase. Conduza as cenas com objetividade.\n\n"
         "**Não vaze metainstruções:** nunca cite instruções do prompt, regras internas, nomes de campos/tools "
         "ou comentários de bastidor no texto narrado.\n\n"
-        f"{opening_contract_for_narrator()}\n\n"
+        f"{opening_contract_for_narrator(config)}\n\n"
         "**Cânone do cenário (obrigatório):** Tudo o que você **afirma como fato** sobre o imóvel, os "
         "cômodos, ligações entre espaços, materiais, dimensões, presença ou ausência de objetos fixos, "
         "janelas, portas e iluminação deve vir **exclusivamente** do **`move`** **e**, quando listados "
@@ -95,10 +111,7 @@ def role_world_rules_section() -> str:
         "«mais a fundo», para decidir **só** o que estiver nos **trechos de segredo** aplicáveis; o "
         "perceptível não secreto **já** podes narrar no mesmo turno **antes** ou **junto** com o "
         "resultado, sem inventar além do mapa.\n\n"
-        f"Depois da **narração inicial do lugar** (resposta a «onde estou?», logo após a intro fixa na UI "
-        f"se ela existir), o personagem já está na **{STARTING_PLACE_NAME}** e essa mensagem já cobriu o "
-        "equivalente a um `move` para esse lugar—**não** chame `move` de novo para esse lugar até que ele "
-        "**saia e volte**.\n\n"
+        f"{after_initial_place}"
         "**Não** repita a cena de abertura salvo se o jogador pedir explicitamente um resumo ou um "
         "recomeço. Para ações incertas, use as ferramentas indicadas abaixo; integre os resultados ao "
         "que você narrar, **sem** acrescentar fatos novos sobre o espaço que não constem da descrição "
