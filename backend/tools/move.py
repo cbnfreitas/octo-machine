@@ -326,23 +326,8 @@ def _build_shortest_path(
     return path
 
 
-# Strips spoiler blocks from raw map prose (labels like "Segredo:", "Segredo difícil:", "Armadilha:"
-# and the rest of the string from that point).
-_SECRET_TAIL = re.compile(
-    r"\s*\bSegredos?(?:\s+(?:importante|crític[oa]?|fácil|facil|médio|medio|difícil|dificil))?\s*:.*",
-    re.IGNORECASE | re.DOTALL,
-)
-_ARMADILHA_TAIL = re.compile(
-    r"\s*\bArmadilha\s*:.*",
-    re.IGNORECASE | re.DOTALL,
-)
-
-
 def _description_for_player_facing(raw: str) -> str:
-    text = raw.strip()
-    text = _SECRET_TAIL.sub("", text)
-    text = _ARMADILHA_TAIL.sub("", text)
-    return " ".join(text.split())
+    return " ".join(raw.strip().split())
 
 
 def _static_place_layer(entry: dict[str, Any], key: str, *, alt_key: str | None = None) -> str:

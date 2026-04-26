@@ -55,8 +55,7 @@ def format_engine_context_for_prompt(
     detail_blocks = ""
     if isinstance(place_details_perceptible, str) and place_details_perceptible.strip():
         detail_blocks += (
-            "\n- **Camada extra do lugar atual (inspeção de perto; texto do mapa já sem trechos "
-            "marcados como segredo ou armadilha):**\n"
+            "\n- **Camada extra do lugar atual (inspeção de perto; texto bruto do mapa, sem filtro):**\n"
             f"{place_details_perceptible.strip()}\n"
         )
     if isinstance(place_details_authoring, str) and place_details_authoring.strip():
