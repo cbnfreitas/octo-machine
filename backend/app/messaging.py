@@ -22,6 +22,8 @@ def format_engine_context_for_prompt(
     known_place_names: tuple[str, ...] | None = None,
     stash_items: tuple[str, ...] | None = None,
     scene_facts_sheet: str | None = None,
+    place_details_perceptible: str | None = None,
+    place_details_authoring: str | None = None,
 ) -> str:
     label = fatigue_label_for_context(fatigue_percent)
     clock = format_game_clock_for_prompt(game_clock_minutes)
@@ -50,6 +52,20 @@ def format_engine_context_for_prompt(
         )
     else:
         filters_block = ""
+    detail_blocks = ""
+    if isinstance(place_details_perceptible, str) and place_details_perceptible.strip():
+        detail_blocks += (
+            "\n- **Camada extra do lugar atual (inspeção de perto; texto do mapa já sem trechos "
+            "marcados como segredo ou armadilha):**\n"
+            f"{place_details_perceptible.strip()}\n"
+        )
+    if isinstance(place_details_authoring, str) and place_details_authoring.strip():
+        detail_blocks += (
+            "\n- **Camada extra do lugar atual (referência de autoria; pode incluir segredos; "
+            "não copie ao jogador nem antecipe; use só após `roll_dice` com desfecho favorável ou "
+            "ação explícita válida no ponto exato):**\n"
+            f"{place_details_authoring.strip()}\n"
+        )
     return (
         f"{SECTION_ENGINE_CONTEXT}\n"
         "- Fadiga interna (acrobacia), só qualitativa: "
@@ -66,6 +82,7 @@ def format_engine_context_for_prompt(
         f"- **Itens no saco (stash) do jogador:** {stash_line}\n"
         "- **Fichas de cena (fatos físicos fixados pelo motor):**\n"
         f"{facts_block}"
+        f"{detail_blocks}"
         f"{filters_block}"
     )
 
@@ -79,6 +96,8 @@ def build_turn_user_content(
     known_place_names: tuple[str, ...] | None = None,
     stash_items: tuple[str, ...] | None = None,
     scene_facts_sheet: str | None = None,
+    place_details_perceptible: str | None = None,
+    place_details_authoring: str | None = None,
 ) -> str:
     intent = player_intent.strip()
     ctx = format_engine_context_for_prompt(
@@ -88,5 +107,7 @@ def build_turn_user_content(
         known_place_names=known_place_names,
         stash_items=stash_items,
         scene_facts_sheet=scene_facts_sheet,
+        place_details_perceptible=place_details_perceptible,
+        place_details_authoring=place_details_authoring,
     )
     return f"{SECTION_PLAYER_INTENT}\n{intent}\n\n{ctx}"

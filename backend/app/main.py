@@ -30,6 +30,7 @@ from tools import TOOLS, run_tool
 from tools.move import (
     get_game_fixed_intro,
     get_initial_game_clock_minutes,
+    get_place_details_for_engine_context,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -344,6 +345,7 @@ async def chat(ws: WebSocket):
                 current_now = session_state.current_place_name
                 stash_now = tuple(sorted(session_state.stash_items))
                 scene_facts_now = session_state.scene_facts_sheet
+                place_perc, place_auth = get_place_details_for_engine_context(session_state)
             messages.append(
                 {
                     "role": "user",
@@ -355,6 +357,8 @@ async def chat(ws: WebSocket):
                         known_place_names=known_now,
                         stash_items=stash_now,
                         scene_facts_sheet=scene_facts_now,
+                        place_details_perceptible=place_perc,
+                        place_details_authoring=place_auth,
                     ),
                 }
             )

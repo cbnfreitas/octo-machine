@@ -326,10 +326,10 @@ def _build_shortest_path(
     return path
 
 
-# Strips spoiler blocks from raw map prose (labels like "Segredo:" / "Armadilha:" and the rest of
-# the string from that point). Does not match "segredos" without an immediate label colon.
+# Strips spoiler blocks from raw map prose (labels like "Segredo:", "Segredo difícil:", "Armadilha:"
+# and the rest of the string from that point).
 _SECRET_TAIL = re.compile(
-    r"\s*\bSegredos?(?:\s+importante|\s+crítico)?\s*:.*",
+    r"\s*\bSegredos?(?:\s+(?:importante|crític[oa]?|fácil|facil|médio|medio|difícil|dificil))?\s*:.*",
     re.IGNORECASE | re.DOTALL,
 )
 _ARMADILHA_TAIL = re.compile(
@@ -352,6 +352,42 @@ def _static_place_layer(entry: dict[str, Any], key: str, *, alt_key: str | None 
     if not isinstance(raw, str):
         return str(raw) if raw is not None else ""
     return raw.strip()
+
+
+def place_details_for_engine_context(
+    place_name: str, *, session_state: GameSessionState | None
+) -> tuple[str, str]:
+    """
+    Details layer for the narrator ENGINE_CONTEXT: (perceptible prose, raw authoring including secrets).
+    """
+    index = _place_index()
+    entry = index.get(place_name.strip())
+    if entry is None:
+        return "", ""
+    _, details_raw = _place_layers_for_session(place_name.strip(), entry, session_state=session_state)
+    if not isinstance(details_raw, str):
+        details_raw = str(details_raw or "")
+    authoring = details_raw.strip()
+    if not authoring:
+        return "", ""
+    perceptible = _description_for_player_facing(details_raw)
+    return perceptible, authoring
+
+
+def get_place_details_for_engine_context(
+    session_state: GameSessionState | None,
+) -> tuple[str | None, str | None]:
+    if session_state is None:
+        return None, None
+    current = session_state.current_place_name
+    if not isinstance(current, str) or not current.strip():
+        return None, None
+    perceptible, authoring = place_details_for_engine_context(
+        current, session_state=session_state
+    )
+    if not perceptible and not authoring:
+        return None, None
+    return (perceptible or None), (authoring or None)
 
 
 def _place_layers_for_session(
