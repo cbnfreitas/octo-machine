@@ -36,7 +36,8 @@ class AppConfig(BaseModel):
 
     include_role_world_rules: bool = False
 
-    include_fixed_intro_context: bool = False
+    # When True (with include_fixed_intro and non-empty fixed_intro), append that text to the narrator system prompt.
+    include_fixed_intro_context: bool = True
     include_acrobatics_fatigue_time: bool = False
 
     
