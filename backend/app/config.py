@@ -1,7 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 def game_assets_root() -> Path:
@@ -9,8 +9,10 @@ def game_assets_root() -> Path:
     return Path(__file__).resolve().parent / "game"
 
 
-class NarratorPromptConfig(BaseModel):
-    """System prompt for the narrator LLM: section toggles and reply budgets."""
+class AppConfig(BaseModel):
+    """Application settings (game package, narrator prompt toggles, reply budgets)."""
+
+    game_folder: str = "uma_noite_de_trabalho"
 
     narration_initial_max_chars: int = 1000
     narration_followup_max_chars: int = 500
@@ -30,10 +32,22 @@ class NarratorPromptConfig(BaseModel):
     include_markdown_emphasis: bool = False
     include_final_checklist_reminder: bool = False
 
+    @property
+    def game_package_root(self) -> Path:
+        return game_assets_root() / self.game_folder
 
-def narrator_prompt_all_sections_enabled() -> NarratorPromptConfig:
-    """Full narrator prompt (all sections and tools on). Use in tests or when comparing to legacy behavior."""
-    return NarratorPromptConfig(
+    @property
+    def game_map_json_path(self) -> Path:
+        return self.game_package_root / f"{self.game_folder}.json"
+
+    @property
+    def game_scene_images_dir(self) -> Path:
+        return self.game_package_root / "imgs"
+
+
+def app_config_with_full_narrator_sections() -> AppConfig:
+    """All narrator sections and tools on; use in tests or legacy-style prompts."""
+    return AppConfig(
         include_fixed_intro_context=True,
         include_acrobatics_fatigue_time=True,
         include_role_world_rules=True,
@@ -49,29 +63,6 @@ def narrator_prompt_all_sections_enabled() -> NarratorPromptConfig:
     )
 
 
-class AppConfig(BaseModel):
-    """Root application settings, split by domain. Extend with new sections as needed."""
-
-    game_folder: str = "uma_noite_de_trabalho"
-    narrator_prompt: NarratorPromptConfig = Field(default_factory=NarratorPromptConfig)
-
-    @property
-    def game_package_root(self) -> Path:
-        return game_assets_root() / self.game_folder
-
-    @property
-    def game_map_json_path(self) -> Path:
-        return self.game_package_root / f"{self.game_folder}.json"
-
-    @property
-    def game_scene_images_dir(self) -> Path:
-        return self.game_package_root / "imgs"
-
-
 @lru_cache(maxsize=1)
 def get_app_config() -> AppConfig:
     return AppConfig()
-
-
-def get_narrator_prompt_config() -> NarratorPromptConfig:
-    return get_app_config().narrator_prompt

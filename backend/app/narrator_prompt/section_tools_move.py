@@ -1,10 +1,10 @@
-from app.config import NarratorPromptConfig
+from app.config import AppConfig
 from app.narrator_prompt.section_scene_image_note import scene_image_instruction_paragraph
 from tools.move import STARTING_PLACE_NAME
 
 
-def tools_move_section_body(config: NarratorPromptConfig) -> str:
-    scene_image_note = scene_image_instruction_paragraph(config)
+def tools_move_section_body(app_config: AppConfig) -> str:
+    scene_image_note = scene_image_instruction_paragraph(app_config)
     return (
         "Use **`move`** quando o jogador **for para outro lugar** do mapa (não para o lugar inicial "
         f"**{STARTING_PLACE_NAME}** enquanto ele não tiver saído dele): em `place_name` use o **nome "

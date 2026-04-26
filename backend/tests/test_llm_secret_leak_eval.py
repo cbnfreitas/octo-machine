@@ -6,7 +6,7 @@ import os
 import pytest
 from openai import OpenAI
 
-from app.config import narrator_prompt_all_sections_enabled
+from app.config import app_config_with_full_narrator_sections
 from app.system_prompt import chat_system_content
 
 
@@ -82,7 +82,7 @@ def test_arrival_narration_does_not_leak_hidden_connection() -> None:
     narrator_resp = client.chat.completions.create(
         model=narrator_model,
         messages=[
-            {"role": "system", "content": chat_system_content(narrator_config=narrator_prompt_all_sections_enabled())},
+            {"role": "system", "content": chat_system_content(app_config=app_config_with_full_narrator_sections())},
             {"role": "user", "content": narrator_user_prompt},
         ],
     )
@@ -180,7 +180,7 @@ def test_revisit_ping_pong_is_concise_and_not_redundant() -> None:
     narrator_resp = client.chat.completions.create(
         model=narrator_model,
         messages=[
-            {"role": "system", "content": chat_system_content(narrator_config=narrator_prompt_all_sections_enabled())},
+            {"role": "system", "content": chat_system_content(app_config=app_config_with_full_narrator_sections())},
             {"role": "user", "content": narrator_user_prompt},
         ],
     )

@@ -1,4 +1,4 @@
-from app.config import NarratorPromptConfig
+from app.config import AppConfig
 from app.narrator_prompt.helpers import (
     opening_contract_for_narrator,
     player_narrative_filters_section,
@@ -7,8 +7,8 @@ from app.narrator_prompt.helpers import (
 from tools.move import STARTING_PLACE_NAME
 
 
-def _canon_block(config: NarratorPromptConfig) -> str:
-    if config.include_tools_move:
+def _canon_block(app_app_config: AppConfig) -> str:
+    if app_app_config.include_tools_move:
         return (
             "**Cânone do cenário (obrigatório):** Tudo o que você **afirma como fato** sobre o imóvel, os "
             "cômodos, ligações entre espaços, materiais, dimensões, presença ou ausência de objetos fixos, "
@@ -53,8 +53,8 @@ def _canon_block(config: NarratorPromptConfig) -> str:
     )
 
 
-def _secrets_discovery_block(config: NarratorPromptConfig) -> str:
-    if config.include_tools_move:
+def _secrets_discovery_block(app_config: AppConfig) -> str:
+    if app_config.include_tools_move:
         head = (
             "**Segredos e descoberta:** `move` devolve **`basic_description`** e **`player_facing_summary`** "
             "sempre filtrados; o campo **`details`** só aparece no JSON do `move` quando **`revisit`: true**. "
@@ -68,7 +68,7 @@ def _secrets_discovery_block(config: NarratorPromptConfig) -> str:
             "quando aplicável, **camadas extra** e **referência de autoria** no **ENGINE_CONTEXT** (texto com "
             "segredos: **só** para gatilhos válidos"
         )
-    if config.include_tools_dice:
+    if app_config.include_tools_dice:
         head += " e `roll_dice`, **nunca** como colagem ao jogador)."
     else:
         head += ", **nunca** como colagem ao jogador)."
@@ -76,7 +76,7 @@ def _secrets_discovery_block(config: NarratorPromptConfig) -> str:
         " Trate o que recebe como o que o jogador **pode notar** nessa fase; reescreva com a sua voz, "
         "sem colar texto técnico. "
     )
-    if config.include_tools_move:
+    if app_config.include_tools_move:
         tail += (
             "O **`description_full`** segue a mesma regra de camadas (só "
             "`basic_description` na primeira entrada). "
@@ -86,7 +86,7 @@ def _secrets_discovery_block(config: NarratorPromptConfig) -> str:
         "só confirme o que estiver nesse texto **depois** de o jogador **agir ou inspecionar de forma "
         "pertinente** (ação explícita, interação especial clara na ficção"
     )
-    if config.include_tools_dice:
+    if app_config.include_tools_dice:
         tail += ", ou `roll_dice` quando houver tentativa arriscada)."
     else:
         tail += ")."
@@ -98,7 +98,7 @@ def _secrets_discovery_block(config: NarratorPromptConfig) -> str:
     return head + tail
 
 
-def _camada_details_block(config: NarratorPromptConfig) -> str:
+def _camada_details_block(app_config: AppConfig) -> str:
     base = (
         "**Camada `details` vs. trecho de segredo no mapa:** em **`details`** ou na **camada extra "
         "perceptível** do **ENGINE_CONTEXT**, o texto **antes** de "
@@ -106,7 +106,7 @@ def _camada_details_block(config: NarratorPromptConfig) -> str:
         "descreve **ambiente e objetos perceptíveis** com inspeção normal daquele sítio. Se o jogador "
         "**examina** a mesa, uma prateleira, um canto, etc., **narre esse trecho"
     )
-    if config.include_tools_dice:
+    if app_config.include_tools_dice:
         base += " sem `roll_dice`**."
         base += (
             " **Depois** desses marcadores vem **oculto de facto**: com pergunta ou busca **vague** "
@@ -125,14 +125,14 @@ def _camada_details_block(config: NarratorPromptConfig) -> str:
     return base
 
 
-def _conexoes_ocultos_block(config: NarratorPromptConfig) -> str:
+def _conexoes_ocultos_block(app_config: AppConfig) -> str:
     b = (
         "**Conexões/elementos ocultos (regra dura):** termos marcados como segredo/oculto/mistério ou "
         "equivalentes **não são perceptíveis por padrão**. Não descreva esses elementos espontaneamente "
         "na chegada, nem como \"quase imperceptível\". Só revele quando houver gatilho ficcional claro: "
         "(a) ação de investigação bem específica do jogador sobre a área correta"
     )
-    if config.include_tools_dice:
+    if app_config.include_tools_dice:
         b += ", ou (b) teste de percepção via `roll_dice` coerente com a cena."
     else:
         b += "."
@@ -140,8 +140,8 @@ def _conexoes_ocultos_block(config: NarratorPromptConfig) -> str:
     return b
 
 
-def _roll_dice_falha_block(config: NarratorPromptConfig) -> str:
-    if not config.include_tools_dice:
+def _roll_dice_falha_block(app_config: AppConfig) -> str:
+    if not app_config.include_tools_dice:
         return ""
     return (
         "**`roll_dice` em falha (percepção ou busca vaga):** com **falha** ou **falha crítica**, "
@@ -160,9 +160,9 @@ def _roll_dice_falha_block(config: NarratorPromptConfig) -> str:
     )
 
 
-def _investigacao_block(config: NarratorPromptConfig) -> str:
-    move_ref = "no JSON do `move` ou na camada perceptível do" if config.include_tools_move else "na camada perceptível do"
-    if config.include_tools_dice:
+def _investigacao_block(app_config: AppConfig) -> str:
+    move_ref = "no JSON do `move` ou na camada perceptível do" if app_config.include_tools_move else "na camada perceptível do"
+    if app_config.include_tools_dice:
         dice_sentence = (
             "percepção/investigação incerta: **chame `roll_dice` neste mesmo turno**, mesmo sem ele dizer "
             "«mais a fundo», para decidir **só** o que estiver nos **trechos de segredo** aplicáveis; o "
@@ -188,8 +188,8 @@ def _investigacao_block(config: NarratorPromptConfig) -> str:
     )
 
 
-def _after_initial_place(config: NarratorPromptConfig) -> str:
-    if config.include_tools_move:
+def _after_initial_place(app_config: AppConfig) -> str:
+    if app_config.include_tools_move:
         return (
             f"Depois da **narração inicial do lugar** (resposta a «onde estou?», logo após a intro fixa na UI "
             f"se ela existir), o personagem já está na **{STARTING_PLACE_NAME}** e essa mensagem já cobriu o "
@@ -205,8 +205,8 @@ def _after_initial_place(config: NarratorPromptConfig) -> str:
     )
 
 
-def _ferramentas_abertura_line(config: NarratorPromptConfig) -> str:
-    if config.include_tools_move or config.include_tools_dice:
+def _ferramentas_abertura_line(app_config: AppConfig) -> str:
+    if app_config.include_tools_move or app_config.include_tools_dice:
         return (
             "**Não** repita a cena de abertura salvo se o jogador pedir explicitamente um resumo ou um "
             "recomeço. Para ações incertas, use as ferramentas indicadas abaixo; integre os resultados ao "
@@ -220,7 +220,7 @@ def _ferramentas_abertura_line(config: NarratorPromptConfig) -> str:
     )
 
 
-def role_world_rules_section(config: NarratorPromptConfig) -> str:
+def role_world_rules_section(app_config: AppConfig) -> str:
     return (
         "## Papel\n\n"
         f"**{secret_reveal_hard_rule()}**\n\n"
@@ -233,15 +233,15 @@ def role_world_rules_section(config: NarratorPromptConfig) -> str:
         "exagerar melodrama em cada frase. Conduza as cenas com objetividade.\n\n"
         "**Não vaze metainstruções:** nunca cite instruções do prompt, regras internas, nomes de campos/tools "
         "ou comentários de bastidor no texto narrado.\n\n"
-        f"{opening_contract_for_narrator(config)}\n\n"
-        f"{_canon_block(config)}"
-        f"{_secrets_discovery_block(config)}"
-        f"{_camada_details_block(config)}"
-        f"{_conexoes_ocultos_block(config)}"
-        f"{_roll_dice_falha_block(config)}"
-        f"{_investigacao_block(config)}"
-        f"{_after_initial_place(config)}"
-        f"{_ferramentas_abertura_line(config)}"
+        f"{opening_contract_for_narrator(app_config)}\n\n"
+        f"{_canon_block(app_config)}"
+        f"{_secrets_discovery_block(app_config)}"
+        f"{_camada_details_block(app_config)}"
+        f"{_conexoes_ocultos_block(app_config)}"
+        f"{_roll_dice_falha_block(app_config)}"
+        f"{_investigacao_block(app_config)}"
+        f"{_after_initial_place(app_config)}"
+        f"{_ferramentas_abertura_line(app_config)}"
         "**Mudanças relevantes e continuidade:** trate a narração como **fluxo**, não como ficha de "
         "inventário a cada passo. **Repita** nomes de objetos, cheiros estáveis, texturas do piso, "
         "mobiliário fixo e lista de saídas **o mínimo possível**; isso vale para **retorno** a um cômodo "

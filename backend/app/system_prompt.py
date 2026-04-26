@@ -1,5 +1,5 @@
 from app.messaging import build_turn_user_content
-from app.config import NarratorPromptConfig, get_narrator_prompt_config
+from app.config import AppConfig, get_app_config
 from app.narrator_prompt import build_rpg_sections
 from app.narrator_prompt.closing_reminder import final_checklist_reminder_section
 from app.session_state import GameSessionState
@@ -31,9 +31,9 @@ def opening_turn_user_content(
     *,
     fatigue_percent: float = 0.0,
     game_clock_minutes: float = 0.0,
-    narrator_config: NarratorPromptConfig | None = None,
+    app_config: AppConfig | None = None,
 ) -> str:
-    cfg = narrator_config or get_narrator_prompt_config()
+    cfg = app_config or get_app_config()
     note_block = ""
     n = get_narrator_opening_note()
     if n.strip():
@@ -73,8 +73,8 @@ def opening_turn_user_content(
     )
 
 
-def chat_system_content(*, narrator_config: NarratorPromptConfig | None = None) -> str:
-    cfg = narrator_config or get_narrator_prompt_config()
+def chat_system_content(*, app_config: AppConfig | None = None) -> str:
+    cfg = app_config or get_app_config()
     head = f"{build_rpg_sections(cfg)}\n\n## Referência das ferramentas\n\n"
     tools = combined_tool_instructions(cfg)
     if cfg.include_final_checklist_reminder:

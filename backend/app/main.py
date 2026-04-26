@@ -17,7 +17,7 @@ from openai.types.chat import (
     ChatCompletionMessageParam,
     ChatCompletionToolUnionParam,
 )
-from app.config import game_assets_root, get_narrator_prompt_config
+from app.config import game_assets_root, get_app_config
 from app.messaging import build_turn_user_content
 from app.backstage import BackstageTurnSnapshot, apply_backstage_llm
 from app.feature_flags import scene_images_enabled
@@ -236,17 +236,17 @@ async def chat(ws: WebSocket):
         return
 
     client = OpenAI(api_key=API_KEY)
-    narr_prompt_cfg = get_narrator_prompt_config()
-    narrator_openai_tools = narrator_tools(narr_prompt_cfg)
+    app_cfg = get_app_config()
+    narrator_openai_tools = narrator_tools(app_cfg)
     session_state = GameSessionState(initial_game_clock_minutes=get_initial_game_clock_minutes())
     messages: list[ChatCompletionMessageParam] = [
-        {"role": "system", "content": chat_system_content(narrator_config=narr_prompt_cfg)},
+        {"role": "system", "content": chat_system_content(app_config=app_cfg)},
         {
             "role": "user",
             "content": opening_turn_user_content(
                 fatigue_percent=session_state.fatigue_percent,
                 game_clock_minutes=session_state.game_clock_minutes,
-                narrator_config=narr_prompt_cfg,
+                app_config=app_cfg,
             ),
         },
     ]

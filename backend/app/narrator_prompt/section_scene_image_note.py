@@ -1,8 +1,8 @@
-from app.config import NarratorPromptConfig
+from app.config import AppConfig
 
 
-def scene_image_instruction_paragraph(config: NarratorPromptConfig) -> str:
-    if not config.scene_images_in_chat:
+def scene_image_instruction_paragraph(app_config: AppConfig) -> str:
+    if not app_config.scene_images_in_chat:
         return ""
     return (
         "Na **primeira entrada** a um lugar nesta sessão, o JSON de `move` pode trazer "

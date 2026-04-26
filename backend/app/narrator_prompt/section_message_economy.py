@@ -1,9 +1,9 @@
-from app.config import NarratorPromptConfig
+from app.config import AppConfig
 
 
-def response_length_economy_section(config: NarratorPromptConfig) -> str:
-    initial = config.narration_initial_max_chars
-    followup = config.narration_followup_max_chars
+def response_length_economy_section(app_config: AppConfig) -> str:
+    initial = app_config.narration_initial_max_chars
+    followup = app_config.narration_followup_max_chars
     return (
         "## Economia de detalhe (extensão)\n\n"
         "Controle o **tamanho** de cada resposta (contagem aproximada por você antes de enviar):\n\n"

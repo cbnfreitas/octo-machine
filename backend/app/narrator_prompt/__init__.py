@@ -1,8 +1,8 @@
-from app.config import NarratorPromptConfig, get_narrator_prompt_config
+from app.config import AppConfig, get_app_config
 from app.narrator_prompt.assemble import build_rpg_sections
 
 __all__ = [
-    "NarratorPromptConfig",
+    "AppConfig",
     "build_rpg_sections",
-    "get_narrator_prompt_config",
+    "get_app_config",
 ]

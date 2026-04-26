@@ -1,4 +1,4 @@
-from app.config import NarratorPromptConfig
+from app.config import AppConfig
 
 from tools.move import (
     STARTING_PLACE_NAME,
@@ -9,11 +9,11 @@ from tools.move import (
 )
 
 
-def fixed_intro_context_section(config: NarratorPromptConfig) -> str:
+def fixed_intro_context_section(app_config: AppConfig) -> str:
     fixed = get_game_fixed_intro().strip()
     if not fixed:
         return ""
-    if config.include_tools_move:
+    if app_config.include_tools_move:
         second_reply = (
             "**Não** repita esse texto na **segunda** mensagem (a que responde à ficha oculta "
             "«Vamos começar, onde estou?»). Nessa resposta use só `move` para o lugar inicial e narre o que o "
@@ -45,9 +45,9 @@ def secret_reveal_hard_rule() -> str:
     )
 
 
-def opening_contract_for_narrator(config: NarratorPromptConfig) -> str:
+def opening_contract_for_narrator(app_config: AppConfig) -> str:
     parts = ["O arquivo de mapa do jogo é **%s**." % game_map_basename()]
-    if config.include_tools_move:
+    if app_config.include_tools_move:
         parts.append(
             (
                 "A **segunda** mensagem do assistente na UI (após a intro fixa, se houver) deve **só** "

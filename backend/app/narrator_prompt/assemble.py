@@ -1,4 +1,4 @@
-from app.config import NarratorPromptConfig
+from app.config import AppConfig
 from app.narrator_prompt.helpers import fixed_intro_context_section
 from app.narrator_prompt.section_acrobatics_fatigue import acrobatics_fatigue_time_section
 from app.narrator_prompt.section_layered_description import layered_description_section
@@ -12,28 +12,28 @@ from app.narrator_prompt.section_tools_dice import tools_dice_section_body
 from app.narrator_prompt.section_tools_move import tools_move_section_body
 
 
-def build_rpg_sections(config: NarratorPromptConfig) -> str:
+def build_rpg_sections(app_config: AppConfig) -> str:
     parts: list[str] = []
-    if config.include_fixed_intro_context:
-        parts.append(fixed_intro_context_section(config))
-    if config.include_acrobatics_fatigue_time:
+    if app_config.include_fixed_intro_context:
+        parts.append(fixed_intro_context_section(app_config))
+    if app_config.include_acrobatics_fatigue_time:
         parts.append(acrobatics_fatigue_time_section())
-    if config.include_role_world_rules:
-        parts.append(role_world_rules_section(config))
-    move_tools = tools_move_section_body(config) if config.include_tools_move else ""
-    dice_tools = tools_dice_section_body() if config.include_tools_dice else ""
+    if app_config.include_role_world_rules:
+        parts.append(role_world_rules_section(app_config))
+    move_tools = tools_move_section_body(app_config) if app_config.include_tools_move else ""
+    dice_tools = tools_dice_section_body() if app_config.include_tools_dice else ""
     if move_tools or dice_tools:
         parts.append(f"## Ferramentas\n\n{move_tools}{dice_tools}")
-    if config.include_player_agency:
+    if app_config.include_player_agency:
         parts.append(player_agency_section())
-    if config.include_layered_description:
+    if app_config.include_layered_description:
         parts.append(layered_description_section())
-    if config.include_spatial_direction:
+    if app_config.include_spatial_direction:
         parts.append(spatial_direction_section())
-    if config.include_response_length_economy:
-        parts.append(response_length_economy_section(config))
-    if config.include_pov_rules:
+    if app_config.include_response_length_economy:
+        parts.append(response_length_economy_section(app_config))
+    if app_config.include_pov_rules:
         parts.append(pov_rules_section())
-    if config.include_markdown_emphasis:
+    if app_config.include_markdown_emphasis:
         parts.append(markdown_emphasis_section())
     return "".join(parts)
