@@ -13,4 +13,10 @@ def test_prompt_requires_visible_exits_on_arrival() -> None:
     prompt = chat_system_content()
 
     assert "saídas visíveis principais" in prompt
-    assert "Quando houver 2 ou mais saídas visíveis" in prompt
+
+
+def test_prompt_forbids_hidden_passage_leaks_on_arrival() -> None:
+    prompt = chat_system_content()
+
+    assert "Regra dura de anti-vazamento na chegada" in prompt
+    assert "proibido** mencionar «abertura secreta»" in prompt
