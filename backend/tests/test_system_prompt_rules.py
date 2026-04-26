@@ -20,3 +20,12 @@ def test_prompt_forbids_hidden_passage_leaks_on_arrival() -> None:
 
     assert "Regra dura de anti-vazamento na chegada" in prompt
     assert "proibido** mencionar «abertura secreta»" in prompt
+
+
+def test_prompt_requires_minimal_revisit_narration() -> None:
+    prompt = chat_system_content()
+
+    assert "ciclos de entra-e-sai entre os mesmos cômodos" in prompt
+    assert "resposta curta (1 frase, tipicamente até ~160 caracteres)" in prompt
+    assert "um único detalhe" in prompt
+    assert "Proibido** em revisit estável: recitar novamente lista de conexões/portas" in prompt
