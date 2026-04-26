@@ -158,6 +158,54 @@ def get_narrator_opening_note() -> str:
     return raw.strip()
 
 
+ROLE_WORLD_PAPEL_MARKDOWN_NAME = "role_world_papel.md"
+ROLE_WORLD_PAPEL_ENGINE_ANCHOR = "<<<ENGINE_RULES_BREAK>>>"
+
+
+def get_narrator_role_world_template_vars() -> dict[str, str]:
+    raw = _raw_game_document()
+
+    def scalar(key: str, *, default: str) -> str:
+        v = raw.get(key)
+        if isinstance(v, str) and v.strip():
+            return v.strip()
+        return default
+
+    return {
+        "player_name": scalar("player_name", default="o jogador"),
+        "main_plot": scalar(
+            "main_plot",
+            default="explorar a casa descrita pelo mapa do jogo",
+        ),
+    }
+
+
+def _apply_braced_placeholders(template: str, variables: dict[str, str]) -> str:
+    out = template
+    for key, value in variables.items():
+        out = out.replace("{" + key + "}", value)
+    return out
+
+
+def load_role_world_papel_sections_rendered() -> tuple[str, str]:
+    path = get_app_config().game_package_root / ROLE_WORLD_PAPEL_MARKDOWN_NAME
+    if not path.is_file():
+        msg = f"Missing narrator papel markdown (expected {path})"
+        raise FileNotFoundError(msg)
+    raw = path.read_text(encoding="utf-8").strip()
+    if not raw:
+        msg = f"Empty narrator papel markdown: {path}"
+        raise ValueError(msg)
+    vars_ = get_narrator_role_world_template_vars()
+    text = _apply_braced_placeholders(raw, vars_)
+    anchor = "\n" + ROLE_WORLD_PAPEL_ENGINE_ANCHOR + "\n"
+    if anchor not in text:
+        msg = f"role_world_papel.md must contain a line {ROLE_WORLD_PAPEL_ENGINE_ANCHOR!r} ({path})"
+        raise ValueError(msg)
+    before, after = text.split(anchor, 1)
+    return before.strip(), after.strip()
+
+
 def get_initial_game_clock_minutes() -> float:
     raw = _raw_game_document().get("initial_game_time")
     return parse_initial_game_time(raw)
