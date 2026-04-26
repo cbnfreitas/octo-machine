@@ -2,8 +2,6 @@ from functools import lru_cache
 
 from pydantic import BaseModel, Field
 
-from app.feature_flags import scene_images_enabled
-
 
 class NarratorPromptConfig(BaseModel):
     """System prompt for the narrator LLM: section toggles and reply budgets."""
@@ -11,7 +9,7 @@ class NarratorPromptConfig(BaseModel):
     narration_initial_max_chars: int = 1000
     narration_followup_max_chars: int = 500
 
-    scene_images_in_chat: bool = Field(default_factory=scene_images_enabled)
+    scene_images_in_chat: bool = False
 
     include_fixed_intro_context: bool = True
     include_acrobatics_fatigue_time: bool = True
