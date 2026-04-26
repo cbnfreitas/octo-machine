@@ -15,19 +15,27 @@ def prompts_root() -> Path:
 
 
 class AppConfig(BaseModel):
-    game_folder: str = "uma_noite_de_trabalho"
+    game_folder: str = "sala_branca"
+
+    # When True, load ``backend/prompts/narrator_system_prompt.md`` as the RPG body; when False, that part is empty.
+    include_narrator_system_prompt_md: bool = True
+
+    # When True, send ``game.fixed_intro`` as the first narrator bubble over WebSocket (UI).
+    include_fixed_intro: bool = True
+
+    # When True, the opening LLM turn includes the simulated first player line from the map
+    # (``opening_player_line`` or ``hidden_first_player_message``).
+    include_opening_player_line: bool = True
 
     narration_initial_max_chars: int = 1000
     narration_followup_max_chars: int = 500
-
-    include_narrator_system_prompt_md: bool = True
 
     include_role_world_rules: bool = False
 
     include_fixed_intro_context: bool = False
     include_acrobatics_fatigue_time: bool = False
 
-    include_opening_player_line: bool = True
+    
 
     include_tools_move: bool = False
     include_tools_dice: bool = False

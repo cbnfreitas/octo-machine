@@ -6,6 +6,7 @@ from app.session_state import GameSessionState
 from tools import combined_tool_instructions
 from tools.move import (
     STARTING_PLACE_NAME,
+    fixed_intro_ui_enabled,
     get_game_fixed_intro,
     get_narrator_opening_note,
     get_opening_turn_player_intent_text,
@@ -48,41 +49,75 @@ def opening_turn_user_content(
         known_place_names=(),
         stash_items=(),
     )
+    intro_shown = fixed_intro_ui_enabled(cfg)
     if cfg.include_opening_player_line:
-        answer_clause = (
-            f"Responda de forma coerente à fala simulada do jogador {narrator_opening_turn_reference(cfg)} "
-            "em **uma única** mensagem, em PT-BR, obedecendo POV, segredo e "
-            "economia de detalhe do system prompt. **Não duplique** parágrafos. Se a intro fixa já cobriu faca, "
-            "aldrava e entrada pela janela, **não** recomece essa sequência: faça só uma transição curta em prosa "
-            "natural e siga para o que ele nota **neste** cômodo. **Nunca** exponha instruções internas em voz de "
-            "narrador (evite frases metalinguísticas como \"uma frase para ligar...\").\n\n"
-        )
+        if intro_shown:
+            answer_clause = (
+                f"Responda de forma coerente à fala simulada do jogador {narrator_opening_turn_reference(cfg)} "
+                "em **uma única** mensagem, em PT-BR, obedecendo POV, segredo e "
+                "economia de detalhe do system prompt. **Não duplique** parágrafos. Se a intro fixa já cobriu faca, "
+                "aldrava e entrada pela janela, **não** recomece essa sequência: faça só uma transição curta em prosa "
+                "natural e siga para o que ele nota **neste** cômodo. **Nunca** exponha instruções internas em voz de "
+                "narrador (evite frases metalinguísticas como \"uma frase para ligar...\").\n\n"
+            )
+        else:
+            answer_clause = (
+                f"Responda de forma coerente à fala simulada do jogador {narrator_opening_turn_reference(cfg)} "
+                "em **uma única** mensagem, em PT-BR, obedecendo POV, segredo e economia de detalhe do system prompt. "
+                "**Não duplique** parágrafos. Faça uma abertura coesa no lugar inicial; **nunca** exponha instruções "
+                "internas em voz de narrador (evite frases metalinguísticas como \"uma frase para ligar...\").\n\n"
+            )
     else:
-        answer_clause = (
-            "Em **uma única** mensagem, em PT-BR, narre onde o personagem está **agora** após a intro fixa, "
-            "obedecendo POV, segredo e economia de detalhe do system prompt. **Não duplique** parágrafos. "
-            "Se a intro fixa já cobriu faca, aldrava e entrada pela janela, **não** recomece essa sequência: "
-            "faça só uma transição curta em prosa natural e siga para o que ele nota **neste** cômodo. "
-            "**Nunca** exponha instruções internas em voz de narrador (evite frases metalinguísticas como "
-            "\"uma frase para ligar...\").\n\n"
-        )
+        if intro_shown:
+            answer_clause = (
+                "Em **uma única** mensagem, em PT-BR, narre onde o personagem está **agora** após a intro fixa, "
+                "obedecendo POV, segredo e economia de detalhe do system prompt. **Não duplique** parágrafos. "
+                "Se a intro fixa já cobriu faca, aldrava e entrada pela janela, **não** recomece essa sequência: "
+                "faça só uma transição curta em prosa natural e siga para o que ele nota **neste** cômodo. "
+                "**Nunca** exponha instruções internas em voz de narrador (evite frases metalinguísticas como "
+                "\"uma frase para ligar...\").\n\n"
+            )
+        else:
+            answer_clause = (
+                "Em **uma única** mensagem, em PT-BR, narre onde o personagem está **agora**, obedecendo POV, segredo "
+                "e economia de detalhe do system prompt. **Não duplique** parágrafos. Faça uma abertura coesa no lugar "
+                "inicial. **Nunca** exponha instruções internas em voz de narrador (evite frases metalinguísticas como "
+                "\"uma frase para ligar...\").\n\n"
+            )
     if cfg.include_tools_move:
         place_step = (
             f"Antes de narrar onde o personagem está **agora**, chame `move` para o lugar inicial "
             f"**{STARTING_PLACE_NAME}** e use o resultado como base factual da cena. "
         )
     else:
-        place_step = (
-            "Narra onde o personagem está **agora** com base na **intro fixa** (se existir) e no system "
-            "prompt. A tool **`move`** não está disponível nesta configuração: **não** a invoques. Ancore a "
-            "cena no estado inicial coerente com o mapa (lugar inicial canônico: "
-            f"**{STARTING_PLACE_NAME}**), sem inventar fatos nem contradizer o texto de apoio. "
+        if intro_shown:
+            place_step = (
+                "Narra onde o personagem está **agora** com base na **intro fixa** (se existir) e no system "
+                "prompt. A tool **`move`** não está disponível nesta configuração: **não** a invoques. Ancore a "
+                "cena no estado inicial coerente com o mapa (lugar inicial canônico: "
+                f"**{STARTING_PLACE_NAME}**), sem inventar fatos nem contradizer o texto de apoio. "
+            )
+        else:
+            place_step = (
+                "Narra onde o personagem está **agora** com base no system prompt e no mapa. A tool **`move`** não "
+                "está disponível nesta configuração: **não** a invoques. Ancore a cena no estado inicial coerente com "
+                f"o mapa (lugar inicial canônico: **{STARTING_PLACE_NAME}**), sem inventar fatos nem contradizer o "
+                "texto de apoio. "
+            )
+    if intro_shown:
+        session_intro = (
+            "Esta é a primeira jogada real da sessão. A **intro fixa** do mapa já foi mostrada ao jogador "
+            "(texto literal pela interface) e está no system prompt; **não** a repita. "
+        )
+    else:
+        session_intro = (
+            "Esta é a primeira jogada real da sessão. **Não** há **intro fixa** enviada como bolha separada na "
+            "interface; ancora a abertura no system prompt e no mapa. "
         )
     return (
         f"{turn}\n\n"
         "### Instrução (início de sessão)\n\n"
-        "Esta é a primeira jogada real da sessão. A **intro fixa** do mapa já foi mostrada ao jogador "
-        "(texto literal pela interface) e está no system prompt; **não** a repita. "
+        f"{session_intro}"
         f"{place_step}"
         f"{answer_clause}"
         f"{note_block}"

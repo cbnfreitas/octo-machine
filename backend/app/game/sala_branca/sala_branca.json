@@ -1,8 +1,8 @@
 {
   "initial_game_time": "00:00",
-  "fixed_intro": "Você não se lembra quem é! Acorda meio zonzo numa sala totalmente branca, sem janelas. Há somente um relógio na parece e uma passagem para outra sala.",
+  "fixed_intro": "Você não se lembra quem é! Acorda meio zonzo numa sala totalmente branca, totalmente vazia, sem janelas. Há somente um relógio na parede e uma passagem para outra sala.",
   "main_plot": "O personagem foi abduzido e está passando por uma experiência alienígena! Ele não faz ideia do que está acontecendo, amnésia temporária. Segredo: se o relógio for quebrado, há uma chave dentro dele. Na sala ao lado há uma porta fechada. Ele está vestido com um macacão branco hospitalar.",
   "player_name": "Sem informação!",
   "player_background": "Sem info, amnésia",
-  "first_player_message": "Ué, quem sou eu? Como estou vestido? "
+  "hidden_first_player_message": "Ué, eu nem lembro nem o meu nome?"
 }

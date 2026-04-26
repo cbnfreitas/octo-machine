@@ -110,6 +110,9 @@ def get_opening_player_line_from_map() -> str:
     raw = _raw_game_document().get("opening_player_line")
     if isinstance(raw, str) and raw.strip():
         return raw.strip()
+    raw_hidden = _raw_game_document().get("hidden_first_player_message")
+    if isinstance(raw_hidden, str) and raw_hidden.strip():
+        return raw_hidden.strip()
     return DEFAULT_OPENING_PLAYER_LINE
 
 
@@ -173,6 +176,10 @@ def get_game_fixed_intro() -> str:
     if not isinstance(raw, str):
         return ""
     return raw.strip()
+
+
+def fixed_intro_ui_enabled(app_config: AppConfig) -> bool:
+    return app_config.include_fixed_intro and bool(get_game_fixed_intro().strip())
 
 
 def get_narrator_opening_note() -> str:

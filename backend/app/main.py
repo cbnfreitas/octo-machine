@@ -251,7 +251,7 @@ async def chat(ws: WebSocket):
         },
     ]
     fixed_intro_text = get_game_fixed_intro()
-    if fixed_intro_text:
+    if app_cfg.include_fixed_intro and fixed_intro_text:
         await ws.send_json({"type": "fixed_intro", "text": fixed_intro_text})
     await ws.send_json({"type": "opening_start"})
 
