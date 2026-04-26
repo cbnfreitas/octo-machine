@@ -10,6 +10,8 @@ from tools.move import (
 
 
 def fixed_intro_context_section(app_config: AppConfig) -> str:
+    """Controlled by ``AppConfig.include_fixed_intro_context``
+    """
     fixed = get_game_fixed_intro().strip()
     if not fixed:
         return ""

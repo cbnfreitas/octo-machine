@@ -221,6 +221,8 @@ def _ferramentas_abertura_line(app_config: AppConfig) -> str:
 
 
 def role_world_rules_section(app_config: AppConfig) -> str:
+    """Controlled by ``AppConfig.include_role_world_rules``
+    """
     return (
         "## Papel\n\n"
         f"**{secret_reveal_hard_rule()}**\n\n"

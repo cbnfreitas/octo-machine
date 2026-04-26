@@ -10,16 +10,16 @@ def game_assets_root() -> Path:
 
 
 class AppConfig(BaseModel):
-    """Application settings (game package, narrator prompt toggles, reply budgets)."""
-
     game_folder: str = "uma_noite_de_trabalho"
 
     narration_initial_max_chars: int = 1000
     narration_followup_max_chars: int = 500
 
-    include_fixed_intro_context: bool = False
+    include_role_world_rules: bool = True
+
+    include_fixed_intro_context: bool = True
     include_acrobatics_fatigue_time: bool = False
-    include_role_world_rules: bool = False
+    
     include_tools_move: bool = False
     include_tools_dice: bool = False
     include_player_agency: bool = False
