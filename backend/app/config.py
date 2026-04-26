@@ -9,21 +9,6 @@ def game_assets_root() -> Path:
     return Path(__file__).resolve().parent / "game"
 
 
-class GameConfig(BaseModel):
-    """Game package under `app/game/<folder_name>/`."""
-
-    folder_name: str = "uma_noite_de_trabalho"
-
-    def package_root(self) -> Path:
-        return game_assets_root() / self.folder_name
-
-    def map_json_path(self) -> Path:
-        return self.package_root() / f"{self.folder_name}.json"
-
-    def scene_images_dir(self) -> Path:
-        return self.package_root() / "imgs"
-
-
 class NarratorPromptConfig(BaseModel):
     """System prompt for the narrator LLM: section toggles and reply budgets."""
 
@@ -48,8 +33,20 @@ class NarratorPromptConfig(BaseModel):
 class AppConfig(BaseModel):
     """Root application settings, split by domain. Extend with new sections as needed."""
 
-    game: GameConfig = Field(default_factory=GameConfig)
+    game_folder: str = "uma_noite_de_trabalho"
     narrator_prompt: NarratorPromptConfig = Field(default_factory=NarratorPromptConfig)
+
+    @property
+    def game_package_root(self) -> Path:
+        return game_assets_root() / self.game_folder
+
+    @property
+    def game_map_json_path(self) -> Path:
+        return self.game_package_root / f"{self.game_folder}.json"
+
+    @property
+    def game_scene_images_dir(self) -> Path:
+        return self.game_package_root / "imgs"
 
 
 @lru_cache(maxsize=1)
@@ -59,7 +56,3 @@ def get_app_config() -> AppConfig:
 
 def get_narrator_prompt_config() -> NarratorPromptConfig:
     return get_app_config().narrator_prompt
-
-
-def get_game_config() -> GameConfig:
-    return get_app_config().game

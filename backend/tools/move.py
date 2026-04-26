@@ -19,7 +19,7 @@ STARTING_PLACE_NAME = "Cozinha"
 
 
 def _game_map_json_path() -> Path:
-    return get_app_config().game.map_json_path()
+    return get_app_config().game_map_json_path
 
 
 def game_map_basename() -> str:
@@ -164,7 +164,7 @@ def get_initial_game_clock_minutes() -> float:
 
 
 def _game_media_root() -> Path:
-    return get_app_config().game.scene_images_dir()
+    return get_app_config().game_scene_images_dir
 
 
 def _place_image_slug(place_name: str) -> str:
